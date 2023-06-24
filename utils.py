@@ -1,5 +1,5 @@
 """
-Functions to create the mean temperature plot.
+Functions to create the temperature plot.
 """
 
 import datetime as dt
@@ -94,6 +94,204 @@ def get_y_limits(df_l: pd.DataFrame, year: int) -> tuple[int, int]:
     return minimum, maximum
 
 
+def set_plot_styles():
+    """
+    Set the plot styles.
+    """
+    # Set seaborn style to white with horizontal grid lines
+    sns.set_style("white")
+    mpl.rcParams["font.family"] = "sans-serif"
+    mpl.rcParams["font.sans-serif"] = "Lato"
+    mpl.rcParams["axes.labelsize"] = 11
+    mpl.rcParams["xtick.labelsize"] = 11
+    mpl.rcParams["ytick.labelsize"] = 11
+
+
+def prepare_axes(axes, df_t, year):
+    """
+    Remove the borders of the plot.
+    """
+    axes.spines["top"].set_visible(False)
+    axes.spines["bottom"].set_visible(False)
+    axes.spines["right"].set_visible(False)
+    axes.spines["left"].set_visible(False)
+
+    # Add y-axis label
+    axes.set_ylabel("Temperature (°C)")
+
+    # Add horizontal grid lines to the plot
+    axes.grid(axis="y", color="0.9", linestyle="-", linewidth=1)
+
+    # Set y-axis limits
+    minimum, maximum = get_y_limits(df_t, year)
+    axes.set_ylim(minimum, maximum)
+
+    # Change x-axis labels to display month names instead of numbers
+    axes.xaxis.set_major_locator(mdates.MonthLocator())
+
+    # 16 is a slight approximation since months differ in number of days.
+    axes.xaxis.set_minor_locator(mdates.MonthLocator(bymonthday=16))
+
+    axes.xaxis.set_major_formatter(ticker.NullFormatter())
+    axes.xaxis.set_minor_formatter(mdates.DateFormatter("%b"))
+
+    for tick in axes.xaxis.get_minor_ticks():
+        tick.tick1line.set_markersize(0)
+        tick.tick2line.set_markersize(0)
+        tick.label1.set_horizontalalignment("center")
+
+
+def plot_percentile_lines(axes, df_t, percentiles):
+    """
+    Plot the percentile lines.
+    """
+
+    # Plot area between p05 and p95
+    axes.fill_between(
+        df_t.index,
+        df_t[f"p{percentiles[0]}"],
+        df_t[f"p{percentiles[1]}"],
+        color="#f8f8f8",
+    )
+
+    for percentile in percentiles:
+        # Add dashed line for percentile
+        axes.plot(
+            df_t.index,
+            df_t[f"p{percentile}"],
+            label=f"{percentile}th Percentile",
+            color="black",
+            linestyle="dashed",
+            linewidth=0.5,
+        )
+        # Place a label on the line
+        axes.text(
+            df_t.index[-1],
+            df_t[f"p{percentile}"].iloc[-1],
+            f"P{percentile}",
+            horizontalalignment="left",
+            verticalalignment="center",
+            color="black",
+        )
+
+
+def add_annotations(axes, df_t, metric, year, year_start, year_display):
+    """
+    Add annotations to the plot to explain the data.
+    """
+    minimum, _ = get_y_limits(df_t, year)
+
+    # Add annotation for mean line, with arrow pointing to the line
+    axes.annotate(
+        f"{metric['description']}\n{year_start}-{year_display}",
+        # Position arrow to the left of the annotation
+        xy=(366 / 3.5 - 30, df_t["mean"].iloc[int(366 / 3.5 - 30)]),
+        # Position text in ~April / between p05 line and minimum
+        xytext=(366 / 3.5, (df_t["p05"].iloc[int(366 / 3.5)] + minimum) / 2),
+        arrowprops={"arrowstyle": "-", "facecolor": "black", "edgecolor": "black"},
+        horizontalalignment="center",
+        verticalalignment="center",
+        color="black",
+    )
+
+    # Get value in the middle between p05 and mean
+    arrow_point = (
+        df_t["p05"].iloc[int(366 / 12 * 10)] + df_t["mean"].iloc[int(366 / 12 * 10)]
+    ) / 2
+
+    # Add annotation for area between p05 and p95
+    axes.annotate(
+        "90% of recorded temperatures\nfall within the gray area",
+        # Position arrow in October
+        xy=(366 / 12 * 10, arrow_point),
+        # Position text on the bottom
+        xytext=(366 / 12 * 9, minimum),
+        arrowprops={"arrowstyle": "-", "facecolor": "black", "edgecolor": "black"},
+        horizontalalignment="center",
+        verticalalignment="bottom",
+        color="black",
+    )
+
+
+def add_data_source(fig, source):
+    """
+    Add data source to the plot.
+    """
+    # Define display of the data source
+    data_source = f"Data: {source}, " if source else ""
+
+    # Add text for data source
+    fig.text(
+        1,
+        0,
+        f"{data_source}Graph: Jan Kühn, https://yotka.org",
+        ha="right",
+        va="bottom",
+        fontsize=8,
+        alpha=0.5,
+    )
+
+
+def plot_diff(axes, df_t, year, cmap, method="above"):
+    """
+    Plot the difference between the year's temperatures and the long-term mean.
+    """
+    # Prevent wrong method values
+    if method != "below":
+        method = "above"
+
+    # Normalize difference to 0-1
+    diff = df_t[f"{year}_diff"]
+    norm = plt.Normalize(diff.min(), diff.max())
+
+    # Choose a colormap
+    colormap = plt.get_cmap(cmap)
+
+    # Get colors from the colormap
+    colors = colormap(norm(diff))
+
+    for i in range(len(df_t.index) - 1):
+        axes.fill_between(
+            df_t.index[i : i + 2],
+            df_t[f"{year}_{method}"].iloc[i : i + 2],
+            df_t["mean"].iloc[i : i + 2],
+            color=colors[i],
+        )
+
+
+def annotate_max_values(axes, df_t, year, highlight_max=3):
+    """
+    Annotate maximum values.
+    """
+    df_max = (
+        df_t.sort_values(f"{year}_diff", ascending=False).loc[:highlight_max].copy()
+    )
+
+    for i in range(highlight_max):
+        axes.scatter(
+            df_max.index[i],
+            df_max[f"{year}_above"].values[i],
+            facecolors="none",
+            edgecolors="black",
+            linewidths=1,
+            s=50,
+            zorder=3,
+        )
+        axes.annotate(
+            f"+{df_max[f'{year}_diff'].values[i]:.1f}°C",
+            xy=(
+                df_max.index[i],
+                df_max[f"{year}_above"].values[i],
+            ),
+            xytext=(
+                df_max.index[i],
+                df_max[f"{year}_above"].values[i] + 1,
+            ),
+            horizontalalignment="center",
+            verticalalignment="bottom",
+        )
+
+
 def create_plot(
     df_t: pd.DataFrame,
     year: int,
@@ -136,23 +334,14 @@ def create_plot(
     # Transform dataframe
     df_t = transform_df(df_t, year, bkw_only)
 
-    # Set seaborn style to white with horizontal grid lines
-    sns.set_style("white")
-
-    mpl.rcParams["font.family"] = "sans-serif"
-    mpl.rcParams["font.sans-serif"] = "Lato"
-    mpl.rcParams["axes.labelsize"] = 11
-    mpl.rcParams["xtick.labelsize"] = 11
-    mpl.rcParams["ytick.labelsize"] = 11
+    # Set plot styles
+    set_plot_styles()
 
     # Create a new figure and axis
     fig, axes = plt.subplots(figsize=(10, 6), dpi=100)
 
     # Remove borders
-    axes.spines["top"].set_visible(False)
-    axes.spines["bottom"].set_visible(False)
-    axes.spines["right"].set_visible(False)
-    axes.spines["left"].set_visible(False)
+    prepare_axes(axes, df_t, year)
 
     # Define display of location in title
     loc = f"in {location} " if location else ""
@@ -174,31 +363,7 @@ def create_plot(
         pad=20,
     )
 
-    # Add y-axis label
-    axes.set_ylabel("Temperature (°C)")
-
-    # Add horizontal grid lines to the plot
-    axes.grid(axis="y", color="0.9", linestyle="-", linewidth=1)
-
-    # Set y-axis limits
-    minimum, maximum = get_y_limits(df_t, year)
-    axes.set_ylim(minimum, maximum)
-
-    # Change x-axis labels to display month names instead of numbers
-    axes.xaxis.set_major_locator(mdates.MonthLocator())
-
-    # 16 is a slight approximation since months differ in number of days.
-    axes.xaxis.set_minor_locator(mdates.MonthLocator(bymonthday=16))
-
-    axes.xaxis.set_major_formatter(ticker.NullFormatter())
-    axes.xaxis.set_minor_formatter(mdates.DateFormatter("%b"))
-
-    for tick in axes.xaxis.get_minor_ticks():
-        tick.tick1line.set_markersize(0)
-        tick.tick2line.set_markersize(0)
-        tick.label1.set_horizontalalignment("center")
-
-    # Plot the historical mean temperature for each day of the year
+    # Plot the historical temperature for each day of the year
     axes.plot(
         df_t.index,
         df_t["mean"],
@@ -206,168 +371,29 @@ def create_plot(
         color="black",
     )
 
-    # Add annotation for mean line, with arrow pointing to the line
-    axes.annotate(
-        f"{metric['description']}\n{year_start}-{year_display}",
-        # Position arrow to the left of the annotation
-        xy=(366 / 3.5 - 30, df_t["mean"].iloc[int(366 / 3.5 - 30)]),
-        # Position text in ~April / between p05 line and minimum
-        xytext=(366 / 3.5, (df_t["p05"].iloc[int(366 / 3.5)] + minimum) / 2),
-        arrowprops={"arrowstyle": "-", "facecolor": "black", "edgecolor": "black"},
-        horizontalalignment="center",
-        verticalalignment="center",
-        color="black",
-    )
-
-    # Plot area between p05 and p95
-    axes.fill_between(
-        df_t.index,
-        df_t["p05"],
-        df_t["p95"],
-        color="#f8f8f8",
-    )
-
-    # Add dashed line for p05
-    axes.plot(
-        df_t.index,
-        df_t["p05"],
-        label="5th Percentile",
-        color="black",
-        linestyle="dashed",
-        linewidth=0.5,
-    )
-
-    # Place a label on the line
-    axes.text(
-        df_t.index[-1],
-        df_t["p05"].iloc[-1],
-        "P5",
-        horizontalalignment="left",
-        verticalalignment="center",
-        color="black",
-    )
-
-    # Add dashed line for p95
-    axes.plot(
-        df_t.index,
-        df_t["p95"],
-        label="95th Percentile",
-        color="black",
-        linestyle="dashed",
-        linewidth=0.5,
-    )
-
-    # Place a label on the line
-    axes.text(
-        df_t.index[-1],
-        df_t["p95"].iloc[-1],
-        "P95",
-        horizontalalignment="left",
-        verticalalignment="center",
-        color="black",
-    )
-
-    # Get value in the middle between p05 and mean
-    arrow_point = (
-        df_t["p05"].iloc[int(366 / 12 * 10)] + df_t["mean"].iloc[int(366 / 12 * 10)]
-    ) / 2
-
-    # Add annotation for area between p05 and p95
-    axes.annotate(
-        "90% of recorded temperatures\nfall within the gray area",
-        # Position arrow in October
-        xy=(366 / 12 * 10, arrow_point),
-        # Position text on the bottom
-        xytext=(366 / 12 * 9, minimum),
-        arrowprops={"arrowstyle": "-", "facecolor": "black", "edgecolor": "black"},
-        horizontalalignment="center",
-        verticalalignment="bottom",
-        color="black",
-    )
+    # Plot percentile lines
+    plot_percentile_lines(axes, df_t, ["05", "95"])
 
     # Plot temperatures above mean
-
-    # Normalize difference to 0-1
-    diff = df_t[f"{year}_diff"]
-    norm = plt.Normalize(diff.min(), diff.max())
-
-    # Choose a colormap
-    cmap = plt.get_cmap("YlOrRd")
-
-    # Get colors from the colormap
-    colors = cmap(norm(diff))
-
-    for i in range(len(df_t.index) - 1):
-        axes.fill_between(
-            df_t.index[i : i + 2],
-            df_t[f"{year}_above"].iloc[i : i + 2],
-            df_t["mean"].iloc[i : i + 2],
-            color=colors[i],
-        )
+    plot_diff(axes, df_t, year, cmap="YlOrRd", method="above")
 
     # Plot temperatures below mean
+    plot_diff(axes, df_t, year, cmap="YlGnBu_r", method="below")
 
-    # Choose a colormap
-    cmap = plt.get_cmap("YlGnBu_r")
+    # Add annotations
+    add_annotations(axes, df_t, metric, year, year_start, year_display)
 
-    # Get colors from the colormap
-    colors = cmap(norm(diff))
-
-    for i in range(len(df_t.index) - 1):
-        axes.fill_between(
-            df_t.index[i : i + 2],
-            df_t[f"{year}_below"].iloc[i : i + 2],
-            df_t["mean"].iloc[i : i + 2],
-            color=colors[i],
-        )
-
+    # Annotate maximum values
     if highlight_max > 0:
-        # Annotate maximum values
-        df_max = (
-            df_t.sort_values(f"{year}_diff", ascending=False).loc[:highlight_max].copy()
-        )
+        annotate_max_values(axes, df_t, year, highlight_max)
 
-        for i in range(highlight_max):
-            axes.scatter(
-                df_max.index[i],
-                df_max[f"{year}_above"].values[i],
-                facecolors="none",
-                edgecolors="black",
-                linewidths=1,
-                s=50,
-                zorder=3,
-            )
-            axes.annotate(
-                f"+{df_max[f'{year}_diff'].values[i]:.1f}°C",
-                xy=(
-                    df_max.index[i],
-                    df_max[f"{year}_above"].values[i],
-                ),
-                xytext=(
-                    df_max.index[i],
-                    df_max[f"{year}_above"].values[i] + 1,
-                ),
-                horizontalalignment="center",
-                verticalalignment="bottom",
-            )
-    # Draw the plot, then make the first and last label invisible
+    # Make the first and last x-axis label invisible
     if axes.get_xticklabels(minor=True):
         axes.get_xticklabels(minor=True)[0].set_visible(False)
         axes.get_xticklabels(minor=True)[-1].set_visible(False)
 
-    # Define display of the data source
-    data_source = f"Data: {source}, " if source else ""
-
-    # Add text for data source
-    fig.text(
-        1,
-        0,
-        f"{data_source}Graph: Jan Kühn, https://yotka.org",
-        ha="right",
-        va="bottom",
-        fontsize=8,
-        alpha=0.5,
-    )
+    # Add data source
+    add_data_source(fig, source)
 
     # Adjust the margin
     fig.subplots_adjust(
@@ -376,7 +402,7 @@ def create_plot(
     )
 
     if save_file:
-        # In loc replacement, replace spaces with dashes
+        # Replace spaces with dashes
         location = location.replace(" ", "-")
         location = location.replace(",", "")
 
