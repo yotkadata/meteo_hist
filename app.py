@@ -47,7 +47,7 @@ metrics = {
     },
     "Minimum temperature": {
         "name": "temperature_2m_min",
-        "title": "Minumum temperatures",
+        "title": "Minimum temperatures",
         "subtitle": "Compared to average of historical daily minimum temperatures",
         "description": "Average of minimum temperatures",
     },
@@ -83,17 +83,16 @@ if st.button("Create graph"):
             )
 
         with st.spinner("Creating graph..."):
-            # Create the Matplotlib figure
-            fig = utils.create_plot(
+            plot = utils.MeteoHist(
                 df,
                 year,
                 metric=metrics[selected_metric],
                 year_start=year - years_compare,
                 highlight_max=peaks,
-                # bkw_only=True,
                 location=location[0]["location_name"],
                 source="open-meteo.com",
             )
+            fig = plot.create_plot()
 
         with st.spinner("Show graph..."):
             # Show the figure
