@@ -4,7 +4,9 @@ Streamlit app.
 
 import datetime as dt
 
+import folium
 import streamlit as st
+from streamlit_folium import folium_static
 
 import utils
 
@@ -107,3 +109,13 @@ if st.button("Create graph"):
         with st.spinner("Show graph..."):
             # Show the figure
             st.pyplot(fig)
+
+        with st.spinner("Creating map..."):
+            # Show a map
+            m = folium.Map(location=[lat, lon], zoom_start=4)
+            folium.Marker(
+                [lat, lon],
+                popup=location[0]["location_name"],
+            ).add_to(m)
+            folium.TileLayer("Stamen Terrain").add_to(m)
+            folium_static(m)
