@@ -50,13 +50,13 @@ def get_data(
 
     # Create new Dataframe from column "daily"
     dates = data.json()["daily"]["time"]
-    temps = data.json()["daily"][metric]
-    df_temperature = pd.DataFrame({"date": dates, "temp": temps})
+    values = data.json()["daily"][metric]
+    df_t = pd.DataFrame({"date": dates, "value": values})
 
     # Convert date column to datetime
-    df_temperature["date"] = pd.to_datetime(df_temperature["date"])
+    df_t["date"] = pd.to_datetime(df_t["date"])
 
-    return df_temperature
+    return df_t
 
 
 def get_lat_lon(query: str, lang: str = "en") -> dict:
