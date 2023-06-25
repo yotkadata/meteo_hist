@@ -3,6 +3,7 @@ Functions to create the plot.
 """
 
 import datetime as dt
+from pathlib import Path
 
 import matplotlib as mpl
 import matplotlib.dates as mdates
@@ -164,6 +165,9 @@ class MeteoHist:
                 "fill_percentiles": "#f8f8f8",
                 "cmap_above": "YlOrRd",
                 "cmap_below": "YlGnBu_r",
+            },
+            "paths": {
+                "output": "output",
             },
         }
 
@@ -524,10 +528,13 @@ class MeteoHist:
 
             metric = self.metric["title"].lower().replace(" ", "-")
 
+            # Make sure the output directory exists
+            Path(self.settings["paths"]["output"]).mkdir(parents=True, exist_ok=True)
+
             # Save the plot
             fig.savefig(
                 (
-                    f"output/{location.lower()}-"
+                    f"{self.settings['paths']['output']}/{location.lower()}-"
                     f"{metric}-{self.year}_"
                     f"ref-{self.year_start}-{self.year_display}.png"
                 ),
