@@ -14,6 +14,7 @@ import requests
 import seaborn as sns
 from dateutil.relativedelta import relativedelta
 from matplotlib import ticker
+import streamlit as st
 
 
 def get_data(
@@ -188,7 +189,7 @@ class MeteoHist:
         """
         return series.quantile(0.95)
 
-    def transform_df(self, df_t, year, bkw_only) -> pd.DataFrame:
+    def transform_df(self, df_t, year, bkw_only=True) -> pd.DataFrame:
         """
         Transforms the dataframe to be used for plotting.
         """

@@ -2,6 +2,8 @@
 Streamlit app.
 """
 
+import datetime as dt
+
 import streamlit as st
 
 import utils
@@ -74,10 +76,18 @@ if st.button("Create graph"):
 
         # Show a progress bar
         with st.spinner("Downloading data..."):
+            # Calculate the end date
+            end_date = (
+                f"{year}-12-31"
+                if dt.datetime.strptime(f"{year}-12-31", "%Y-%m-%d") < dt.datetime.now()
+                else "today"
+            )
+
             # Download the data
             df = utils.get_data(
                 lat,
                 lon,
+                end_date=end_date,
                 years_compare=years_compare,
                 metric=metrics[selected_metric]["name"],
             )
