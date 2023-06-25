@@ -1,5 +1,5 @@
 """
-Functions to create the temperature plot.
+Functions to create the plot.
 """
 
 import datetime as dt
@@ -94,7 +94,7 @@ def get_lat_lon(query: str, lang: str = "en") -> dict:
 
 class MeteoHist:
     """
-    Class to create a temperature plot.
+    Class to create a plot of a year's meteo values compared to historic values.
     """
 
     def __init__(
@@ -114,7 +114,7 @@ class MeteoHist:
         Parameters
         ----------
         df_t : pd.DataFrame
-            Dataframe with temperature data.
+            Dataframe with metric data.
         year : int
             Year to plot.
         metric : str
@@ -198,28 +198,28 @@ class MeteoHist:
         df_f["dayofyear"] = df_f["date"].dt.dayofyear
 
         # Group by day of year and calculate min, 5th percentile, mean, 95th percentile, and max
-        df_g = df_f.groupby("dayofyear")["temp"].agg(
+        df_g = df_f.groupby("dayofyear")["value"].agg(
             ["min", self.p05, "mean", self.p95, "max"]
         )
 
-        # Add column with year's temperature
+        # Add column with year's value
         df_g[f"{year}"] = df_f[df_f["date"].dt.year == year][
-            ["dayofyear", "temp"]
-        ].set_index("dayofyear")["temp"]
+            ["dayofyear", "value"]
+        ].set_index("dayofyear")["value"]
 
-        # Add column with year's temperature above mean
+        # Add column with year's value above mean
         df_g[f"{year}_above"] = df_g.apply(
             lambda x: x[f"{year}"] if x[f"{year}"] > x["mean"] else None,
             axis=1,
         )
 
-        # Add column with year's temperature below mean
+        # Add column with year's value below mean
         df_g[f"{year}_below"] = df_g.apply(
             lambda x: x[f"{year}"] if x[f"{year}"] < x["mean"] else None,
             axis=1,
         )
 
-        # Add column that holds the difference between the year's temperature and the mean
+        # Add column that holds the difference between the year's value and the mean
         df_g[f"{year}_diff"] = df_g[f"{year}"] - df_g["mean"]
 
         return df_g
@@ -405,7 +405,7 @@ class MeteoHist:
 
     def plot_diff(self, axes, cmap, method="above"):
         """
-        Plot the difference between the year's temperatures and the long-term mean.
+        Plot the difference between the year's value and the long-term mean.
         """
         # Prevent wrong method values
         if method != "below":
@@ -465,7 +465,7 @@ class MeteoHist:
 
     def create_plot(self) -> plt.Figure:
         """
-        Creates the temperature plot.
+        Creates the plot.
         """
         # Set plot styles
         self.set_plot_styles()
@@ -479,7 +479,7 @@ class MeteoHist:
         # Add heading
         self.add_heading()
 
-        # Plot the historical temperature for each day of the year
+        # Plot the historical value for each day of the year
         axes.plot(
             self.df_t.index,
             self.df_t["mean"],
@@ -490,10 +490,10 @@ class MeteoHist:
         # Plot percentile lines
         self.plot_percentile_lines(axes)
 
-        # Plot temperatures above mean
+        # Plot value above mean
         self.plot_diff(axes, cmap=self.settings["colors"]["cmap_above"], method="above")
 
-        # Plot temperatures below mean
+        # Plot value below mean
         self.plot_diff(axes, cmap=self.settings["colors"]["cmap_below"], method="below")
 
         # Add annotations
@@ -528,7 +528,7 @@ class MeteoHist:
             fig.savefig(
                 (
                     f"output/{location.lower()}-"
-                    f"{metric}-temperature-{self.year}_"
+                    f"{metric}-{self.year}_"
                     f"ref-{self.year_start}-{self.year_display}.png"
                 ),
                 dpi=300,
