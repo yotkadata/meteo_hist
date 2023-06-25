@@ -1,0 +1,4 @@
+/* Make Folium maps responsive */
+[title~="st.iframe"] {
+    width: 100%;
+}
