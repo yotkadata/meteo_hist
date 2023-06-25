@@ -108,6 +108,7 @@ class MeteoHist:
         bkw_only: bool = True,
         location: str = None,
         source: str = None,
+        settings: dict = None,
     ):
         """
         Parameters
@@ -141,6 +142,33 @@ class MeteoHist:
         self.location = location
         self.source = source
         self.year_display = self.year if self.bkw_only else self.df_t.date.dt.year.max()
+        self.settings = self.update_settings(settings)
+
+    def update_settings(self, settings: dict) -> None:
+        """
+        Update the settings dictionary.
+        """
+        default_settings = {
+            "font": {
+                "family": "sans-serif",
+                "font": "Lato",
+                "default_size": 11,
+                "axes.labelsize": 11,
+                "xtick.labelsize": 11,
+                "ytick.labelsize": 11,
+            },
+            "yaxis_label": "Temperature (°C)",
+            "colors": {
+                "fill_percentiles": "#f8f8f8",
+                "cmap_above": "YlOrRd",
+                "cmap_below": "YlGnBu_r",
+            },
+        }
+
+        if isinstance(settings, dict):
+            default_settings.update(settings)
+
+        return default_settings
 
     def p05(self, series: pd.Series) -> float:
         """
@@ -219,11 +247,11 @@ class MeteoHist:
         # Set seaborn style to white with horizontal grid lines
         sns.set_style("white")
 
-        mpl.rcParams["font.family"] = "sans-serif"
-        mpl.rcParams["font.sans-serif"] = "Lato"
-        mpl.rcParams["axes.labelsize"] = 11
-        mpl.rcParams["xtick.labelsize"] = 11
-        mpl.rcParams["ytick.labelsize"] = 11
+        mpl.rcParams["font.family"] = self.settings["font"]["family"]
+        mpl.rcParams["font.sans-serif"] = self.settings["font"]["font"]
+        mpl.rcParams["axes.labelsize"] = self.settings["font"]["axes.labelsize"]
+        mpl.rcParams["xtick.labelsize"] = self.settings["font"]["xtick.labelsize"]
+        mpl.rcParams["ytick.labelsize"] = self.settings["font"]["ytick.labelsize"]
 
     def prepare_axes(self, axes):
         """
@@ -235,7 +263,7 @@ class MeteoHist:
         axes.spines["left"].set_visible(False)
 
         # Add y-axis label
-        axes.set_ylabel("Temperature (°C)")
+        axes.set_ylabel(self.settings["yaxis_label"])
 
         # Add horizontal grid lines to the plot
         axes.grid(axis="y", color="0.9", linestyle="-", linewidth=1)
@@ -294,7 +322,7 @@ class MeteoHist:
             self.df_t.index,
             self.df_t[f"p{percentiles[0]}"],
             self.df_t[f"p{percentiles[1]}"],
-            color="#f8f8f8",
+            color=self.settings["colors"]["fill_percentiles"],
         )
 
         for percentile in percentiles:
@@ -461,10 +489,10 @@ class MeteoHist:
         self.plot_percentile_lines(axes)
 
         # Plot temperatures above mean
-        self.plot_diff(axes, cmap="YlOrRd", method="above")
+        self.plot_diff(axes, cmap=self.settings["colors"]["cmap_above"], method="above")
 
         # Plot temperatures below mean
-        self.plot_diff(axes, cmap="YlGnBu_r", method="below")
+        self.plot_diff(axes, cmap=self.settings["colors"]["cmap_below"], method="below")
 
         # Add annotations
         self.add_annotations(axes)
