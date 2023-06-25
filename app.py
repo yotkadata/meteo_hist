@@ -84,7 +84,8 @@ with main:
         # Create button to start the analysis
         create_graph = st.button("Create graph")
 
-        map_placeholder = st.empty()
+        if create_graph and not location_name:
+            st.error("Please enter a location name.")
 
         with col2:
             plot_placeholder = st.empty()
