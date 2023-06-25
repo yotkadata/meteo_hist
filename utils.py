@@ -131,6 +131,8 @@ class MeteoHist:
             Location name, by default None.
         source : str, optional
             Source name, by default None.
+        settings : dict, optional
+            Settings dictionary, by default None.
         """
         self.df_t = self.transform_df(df_t, year, bkw_only)
         self.year = year
