@@ -2,11 +2,25 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
+# Install dependencies
+RUN apt-get update && \
+    apt-get install -y \
+    wget \
+    unzip \
+    fontconfig
+
+# Install Lato font
+RUN mkdir -p /usr/share/fonts/truetype/lato && \
+    wget -O /tmp/Lato.zip "https://fonts.google.com/download?family=Lato" && \
+    unzip /tmp/Lato.zip -d /usr/share/fonts/truetype/lato && \
+    fc-cache -f -v
+
 COPY requirements.txt /app
 
 RUN pip install -r requirements.txt
 
 COPY *.py /app/
+COPY *.css /app/
 
 EXPOSE 8501
 
