@@ -128,7 +128,6 @@ class MeteoHist:
         highlight_max: int = 1,
         save_file: bool = True,
         location: str = None,
-        source: str = None,
         settings: dict = None,
     ):
         """
@@ -148,8 +147,6 @@ class MeteoHist:
             Whether to save the plot to a file, by default True.
         location : str, optional
             Location name, by default None.
-        source : str, optional
-            Source name, by default None.
         settings : dict, optional
             Settings dictionary, by default None.
         """
@@ -160,7 +157,6 @@ class MeteoHist:
         self.highlight_max = highlight_max
         self.save_file = save_file
         self.location = location
-        self.source = source
         self.settings = self.update_settings(settings)
         self.ref_nans = 0
 
@@ -413,14 +409,10 @@ class MeteoHist:
         """
         Add data source to the plot.
         """
-        # Define display of the data source
-        data_source = f"Data: {self.source}, " if self.source else ""
-
-        # Add text for data source
         fig.text(
             1,
             0,
-            f"{data_source}Graph: Jan Kühn, https://yotka.org",
+            f"Data: open-meteo.com, OSM  License: CC by-sa-nc 4.0  Graph: Jan Kühn, https://yotka.org",
             ha="right",
             va="bottom",
             fontsize=8,
