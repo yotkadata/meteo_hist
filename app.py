@@ -2,8 +2,6 @@
 Streamlit app.
 """
 
-import datetime as dt
-
 import folium
 import streamlit as st
 from streamlit_folium import folium_static
@@ -47,7 +45,7 @@ with main:
         # Create input widget for year
         year = st.selectbox(
             "Select a year to show",
-            list(range(2023, 1949, -1)),
+            list(range(2023, 1939, -1)),
         )
 
         # Number of peaks to annotate
@@ -55,20 +53,24 @@ with main:
             "How many peaks should be highlighted?", min_value=0, max_value=5, value=1
         )
 
-        # Calculate the maximum value for the years to compare with
-        max_value = year - 1940
-        max_value = max_value - (max_value % 10)
-
-        selected_value = max_value if max_value < 30 else 30
-
-        # Number of years to compare with
-        years_compare = st.slider(
-            "How many years to compare to",
-            min_value=5,
-            max_value=max_value,
-            value=selected_value,
-            step=5,
+        select_ref_period = st.selectbox(
+            "Select a reference period",
+            [
+                "1991-2020",
+                "1981-2010",
+                "1971-2000",
+                "1961-1990",
+                "1951-1980",
+                "1941-1970",
+            ],
         )
+
+        # Convert selection to tuple
+        if select_ref_period:
+            ref_period = (
+                int(select_ref_period.split("-")[0]),
+                int(select_ref_period.split("-")[1]),
+            )
 
         metrics = {
             "Mean temperature": {
@@ -120,20 +122,12 @@ with main:
 
                 # Show a progress bar
                 with st.spinner("Downloading data..."):
-                    # Calculate the end date
-                    end_date = (
-                        f"{year}-12-31"
-                        if dt.datetime.strptime(f"{year}-12-31", "%Y-%m-%d")
-                        < dt.datetime.now()
-                        else "today"
-                    )
-
                     # Download the data
                     df = utils.get_data(
                         lat,
                         lon,
-                        end_date=end_date,
-                        years_compare=years_compare,
+                        year=year,
+                        reference_period=ref_period,
                         metric=metrics[selected_metric]["name"],
                     )
 
@@ -142,17 +136,24 @@ with main:
                         df,
                         year,
                         metric=metrics[selected_metric],
-                        year_start=year - years_compare,
+                        reference_period=ref_period,
                         highlight_max=peaks,
                         location=location[0]["location_name"],
                         source="open-meteo.com",
                     )
-                    fig = plot.create_plot()
+                    fig, ref_nans = plot.create_plot()
+
+                    if ref_nans > 0.05:
+                        st.warning(
+                            f"Reference period contains {ref_nans:.2%} missing values."
+                        )
 
                 with st.spinner("Show graph..."):
                     # Show the figure
                     with plot_placeholder:
                         st.pyplot(fig)
+
+                st.write("")
 
                 with st.expander("Show map"):
                     with st.spinner("Creating map..."):

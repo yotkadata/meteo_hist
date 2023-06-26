@@ -13,32 +13,44 @@ import numpy as np
 import pandas as pd
 import requests
 import seaborn as sns
-from dateutil.relativedelta import relativedelta
 from matplotlib import ticker
+
+
+def calc_dates(ref_period: tuple[int, int], year: int) -> tuple[str, str]:
+    """
+    Calculate the start and end date for the data to be downloaded.
+    """
+    # Use year if it is smaller than the ref_period lower bound
+    start_year = year if int(ref_period[0]) > year else ref_period[0]
+
+    # Use year if it is bigger than the ref_period upper bound
+    end_year = year if int(ref_period[1]) < year else ref_period[1]
+
+    date_start = f"{start_year}-01-01"
+    date_end = f"{end_year}-12-31"
+
+    # If the end date is in the future, set it to today
+    if date_end >= dt.datetime.now().strftime("%Y-%m-%d"):
+        date_end = dt.datetime.now().strftime("%Y-%m-%d")
+
+    return date_start, date_end
 
 
 def get_data(
     lat: float,
     lon: float,
-    end_date: str = "today",
+    year: int = None,
+    reference_period: str = "1991-2020",
     timezone: str = "Europe/Berlin",
-    years_compare: int = 30,
     metric="temperature_2m_mean",
 ) -> pd.DataFrame:
     """
     Get data from the API and return a DataFrame with the data.
     """
-    # Get the date 3 days ago
-    end_date = (
-        (dt.date.today() - dt.timedelta(days=3)).strftime("%Y-%m-%d")
-        if end_date == "today"
-        else end_date
-    )
+    # Set default for year
+    year = dt.datetime.now().year if year is None else year
 
-    # Calculate start date
-    start_date = (
-        dt.datetime.strptime(end_date, "%Y-%m-%d") - relativedelta(years=years_compare)
-    ).strftime("%Y-%m-%d")
+    start_date, end_date = calc_dates(reference_period, year)
 
     url = (
         "https://archive-api.open-meteo.com/v1/archive?"
@@ -51,9 +63,12 @@ def get_data(
     data = requests.get(url, timeout=30)
 
     # Create new Dataframe from column "daily"
-    dates = data.json()["daily"]["time"]
-    values = data.json()["daily"][metric]
-    df_t = pd.DataFrame({"date": dates, "value": values})
+    df_t = pd.DataFrame(
+        {
+            "date": data.json()["daily"]["time"],
+            "value": data.json()["daily"][metric],
+        }
+    )
 
     # Convert date column to datetime
     df_t["date"] = pd.to_datetime(df_t["date"])
@@ -104,10 +119,9 @@ class MeteoHist:
         df_t: pd.DataFrame,
         year: int,
         metric: str,
-        year_start: int = 1940,
+        reference_period: tuple = (1991, 2020),
         highlight_max: int = 1,
         save_file: bool = True,
-        bkw_only: bool = True,
         location: str = None,
         source: str = None,
         settings: dict = None,
@@ -121,14 +135,12 @@ class MeteoHist:
             Year to plot.
         metric : str
             Metric to plot.
-        year_start : int, optional
-            Year to start the comparison from, by default 1940.
+        reference_period : tuple of ints
+            Reference period to compare the data, by default (1991, 2020).
         highlight_max : int, optional
             Number of peaks to highlight, by default 1.
         save_file : bool, optional
             Whether to save the plot to a file, by default True.
-        bkw_only : bool, optional
-            Whether to only use data from before the selected year, by default True.
         location : str, optional
             Location name, by default None.
         source : str, optional
@@ -136,17 +148,16 @@ class MeteoHist:
         settings : dict, optional
             Settings dictionary, by default None.
         """
-        self.df_t = self.transform_df(df_t, year, bkw_only)
+        self.df_t = self.transform_df(df_t, year, reference_period)
         self.year = year
         self.metric = metric
-        self.year_start = year_start
+        self.reference_period = reference_period
         self.highlight_max = highlight_max
         self.save_file = save_file
-        self.bkw_only = bkw_only
         self.location = location
         self.source = source
-        self.year_display = self.year if self.bkw_only else self.df_t.date.dt.year.max()
         self.settings = self.update_settings(settings)
+        self.ref_nans = 0
 
     def update_settings(self, settings: dict) -> None:
         """
@@ -190,21 +201,23 @@ class MeteoHist:
         """
         return series.quantile(0.95)
 
-    def transform_df(self, df_t, year, bkw_only=True) -> pd.DataFrame:
+    def transform_df(self, df_t, year, ref_period) -> pd.DataFrame:
         """
         Transforms the dataframe to be used for plotting.
         """
         df_f = df_t.copy()
 
-        if bkw_only:
-            # Remove all years after selected year
-            df_f = df_t[df_t["date"].dt.year <= year].copy()
-
         # Add column with day of year
         df_f["dayofyear"] = df_f["date"].dt.dayofyear
 
+        # Filter dataframe to reference period
+        df_g = df_f[df_f["date"].dt.year.between(*ref_period)].copy()
+
+        # Count number of NaN in reference period
+        self.ref_nans = df_g["value"].isna().sum() / len(df_g) if len(df_g) > 0 else 0
+
         # Group by day of year and calculate min, 5th percentile, mean, 95th percentile, and max
-        df_g = df_f.groupby("dayofyear")["value"].agg(
+        df_g = df_g.groupby("dayofyear")["value"].agg(
             ["min", self.p05, "mean", self.p95, "max"]
         )
 
@@ -310,7 +323,7 @@ class MeteoHist:
             ha="right",
         )
         plt.title(
-            f"{self.metric['subtitle']} ({self.year_start}-{self.year_display})",
+            f"{self.metric['subtitle']} ({self.reference_period[0]}-{self.reference_period[1]})",
             fontsize=14,
             fontweight="normal",
             x=1,
@@ -361,7 +374,7 @@ class MeteoHist:
 
         # Add annotation for mean line, with arrow pointing to the line
         axes.annotate(
-            f"{self.metric['description']}\n{self.year_start}-{self.year_display}",
+            f"{self.metric['description']}\n{self.reference_period[0]}-{self.reference_period[1]}",
             # Position arrow to the left of the annotation
             xy=(366 / 3.5 - 30, self.df_t["mean"].iloc[int(366 / 3.5 - 30)]),
             # Position text in ~April / between p05 line and minimum
@@ -509,7 +522,7 @@ class MeteoHist:
         axes.plot(
             self.df_t.index,
             self.df_t["mean"],
-            label=f"{self.metric['description']} {self.year_start}-{self.year_display}",
+            label=f"{self.metric['description']} {self.reference_period[0]}-{self.reference_period[1]}",
             color="black",
         )
 
@@ -558,7 +571,7 @@ class MeteoHist:
                 (
                     f"{self.settings['paths']['output']}/{location.lower()}-"
                     f"{metric}-{self.year}_"
-                    f"ref-{self.year_start}-{self.year_display}.png"
+                    f"ref-{self.reference_period[0]}-{self.reference_period[1]}.png"
                 ),
                 dpi=300,
                 bbox_inches="tight",
@@ -567,7 +580,7 @@ class MeteoHist:
         # Remove old files
         self.clean_output_dir()
 
-        return fig
+        return fig, self.ref_nans
 
     @staticmethod
     def show_random(dir_output="output"):
