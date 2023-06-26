@@ -3,6 +3,7 @@ Functions to create the plot.
 """
 
 import datetime as dt
+import os
 from pathlib import Path
 
 import matplotlib as mpl
@@ -14,7 +15,6 @@ import requests
 import seaborn as sns
 from dateutil.relativedelta import relativedelta
 from matplotlib import ticker
-import streamlit as st
 
 
 def get_data(
@@ -468,6 +468,22 @@ class MeteoHist:
                 verticalalignment="bottom",
             )
 
+    def clean_output_dir(self, num_files_to_keep: int = 30):
+        """
+        Remove old files from the output directory.
+        """
+        # Specify the directory
+        dir_output = Path(self.settings["paths"]["output"])
+
+        # Get all png files in the directory, ordered by creation date
+        png_files = sorted(dir_output.glob("*.png"), key=os.path.getctime, reverse=True)
+
+        # Remove all files except the newest ones
+        for file in png_files[num_files_to_keep:]:
+            os.remove(file)
+
+        print(f"Removed {len(png_files) - num_files_to_keep} old files.")
+
     def create_plot(self) -> plt.Figure:
         """
         Creates the plot.
@@ -542,5 +558,8 @@ class MeteoHist:
                 dpi=300,
                 bbox_inches="tight",
             )
+
+        # Remove old files
+        self.clean_output_dir()
 
         return fig
