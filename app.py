@@ -23,7 +23,11 @@ margin_1, main, margin_2 = st.columns([1, 10, 1])
 with margin_1:
     # Show yotka logo
     st.markdown(
-        "<a href='https://yotka.org' title='Back to yotka.org'><img src='https://yotka.org/files/logo.svg' width='60'></a>",
+        """
+        <a href='https://yotka.org' title='Back to yotka.org'>
+            <img src='https://yotka.org/files/logo.svg' width='60'>
+        </a>
+        """,
         unsafe_allow_html=True,
     )
 
