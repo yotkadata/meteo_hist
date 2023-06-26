@@ -15,13 +15,13 @@ RUN mkdir -p /usr/share/fonts/truetype/lato && \
     unzip /tmp/Lato.zip -d /usr/share/fonts/truetype/lato && \
     fc-cache -f -v
 
-COPY requirements.txt /app
+COPY requirements.txt .
 
 RUN pip install -r requirements.txt
 
-COPY *.py /app/
-COPY *.css /app/
-COPY output /app/output
+COPY *.py .
+COPY *.css .
+COPY ./output .
 
 EXPOSE 8501
 
