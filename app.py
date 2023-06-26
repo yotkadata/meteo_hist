@@ -63,6 +63,7 @@ with main:
                 "1951-1980",
                 "1941-1970",
             ],
+            index=3,
         )
 
         # Convert selection to tuple
