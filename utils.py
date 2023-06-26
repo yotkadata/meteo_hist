@@ -503,6 +503,28 @@ class MeteoHist:
 
         print(f"Removed {len(png_files) - num_files_to_keep} old files.")
 
+    def save_plot_to_file(self, fig: plt.Figure) -> None:
+        """
+        Save the plot to a file.
+        """
+        # Replace spaces with dashes
+        location = self.location.lower().replace(" ", "-").replace(",", "")
+        metric = self.metric["title"].lower().replace(" ", "-")
+
+        # Make sure the output directory exists
+        Path(self.settings["paths"]["output"]).mkdir(parents=True, exist_ok=True)
+
+        # Save the plot
+        fig.savefig(
+            (
+                f"{self.settings['paths']['output']}/{location}-"
+                f"{metric}-{self.year}_"
+                f"ref-{self.reference_period[0]}-{self.reference_period[1]}.png"
+            ),
+            dpi=300,
+            bbox_inches="tight",
+        )
+
     def create_plot(self) -> plt.Figure:
         """
         Creates the plot.
@@ -561,25 +583,7 @@ class MeteoHist:
         )
 
         if self.save_file:
-            # Replace spaces with dashes
-            location = self.location.replace(" ", "-")
-            location = location.replace(",", "")
-
-            metric = self.metric["title"].lower().replace(" ", "-")
-
-            # Make sure the output directory exists
-            Path(self.settings["paths"]["output"]).mkdir(parents=True, exist_ok=True)
-
-            # Save the plot
-            fig.savefig(
-                (
-                    f"{self.settings['paths']['output']}/{location.lower()}-"
-                    f"{metric}-{self.year}_"
-                    f"ref-{self.reference_period[0]}-{self.reference_period[1]}.png"
-                ),
-                dpi=300,
-                bbox_inches="tight",
-            )
+            self.save_plot_to_file(fig)
 
         # Remove old files
         self.clean_output_dir()
