@@ -172,4 +172,8 @@ with main:
             if random_graph:
                 st.write("Random graph from the list of graphs created before.")
                 with plot_placeholder:
-                    st.image(utils.MeteoHist.show_random())
+                    img = utils.MeteoHist.show_random()
+                    if img:
+                        st.image(img)
+                    else:
+                        st.error("No graph found.")

@@ -601,7 +601,8 @@ class MeteoHist:
         # Get all PNG files in the directory
         files = dir_output.glob("*.png")
 
-        # Choose a random file
-        file = np.random.choice(list(files))
+        if len(list(files)) > 0:
+            # Choose a random file
+            file = np.random.choice(list(files))
 
-        return file.as_posix()
+            return file.as_posix()

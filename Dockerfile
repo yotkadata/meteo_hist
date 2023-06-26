@@ -21,6 +21,7 @@ RUN pip install -r requirements.txt
 
 COPY *.py /app/
 COPY *.css /app/
+COPY output /app/output
 
 EXPOSE 8501
 
