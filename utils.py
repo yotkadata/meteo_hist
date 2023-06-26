@@ -170,6 +170,7 @@ class MeteoHist:
             "paths": {
                 "output": "output",
             },
+            "num_files_to_keep": 30,
         }
 
         if isinstance(settings, dict):
@@ -468,10 +469,14 @@ class MeteoHist:
                 verticalalignment="bottom",
             )
 
-    def clean_output_dir(self, num_files_to_keep: int = 30):
+    def clean_output_dir(self, num_files_to_keep: int = None) -> None:
         """
         Remove old files from the output directory.
         """
+        # If no number of files to keep is specified, use the default value
+        if num_files_to_keep is None:
+            num_files_to_keep = self.settings["num_files_to_keep"]
+
         # Specify the directory
         dir_output = Path(self.settings["paths"]["output"])
 
