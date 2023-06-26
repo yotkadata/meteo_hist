@@ -89,14 +89,16 @@ with main:
         selected_metric = st.selectbox("Select a metric", list(metrics.keys()))
 
         # Create button to start the analysis
-        create_graph = st.button("Create graph")
+        create_graph = st.button("Create")
 
-        if create_graph and not location_name:
-            st.error("Please enter a location name.")
+        # Create button to show random graph
+        random_graph = st.button("Show random")
 
         with col2:
             plot_placeholder = st.empty()
-            if create_graph and location_name:
+            if create_graph and not location_name:
+                st.error("Please enter a location name.")
+            elif create_graph and location_name:
                 with st.spinner("Searching for latitude and longitude..."):
                     # Get the latitude and longitude
                     location = utils.get_lat_lon(location_name)
@@ -111,7 +113,6 @@ with main:
                             </div>""",
                         unsafe_allow_html=True,
                     )
-                    # st.markdown(f"**Latitude:** {lat}, **Longitude:** {lon}.")
 
                 # Show a progress bar
                 with st.spinner("Downloading data..."):
@@ -159,3 +160,8 @@ with main:
                         ).add_to(m)
                         folium.TileLayer("Stamen Terrain").add_to(m)
                         folium_static(m)
+
+            if random_graph:
+                st.write("Random graph from the list of graphs created before.")
+                with plot_placeholder:
+                    st.image(utils.MeteoHist.show_random())

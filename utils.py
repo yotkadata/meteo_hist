@@ -480,7 +480,7 @@ class MeteoHist:
         # Specify the directory
         dir_output = Path(self.settings["paths"]["output"])
 
-        # Get all png files in the directory, ordered by creation date
+        # Get all PNG files in the directory, ordered by creation date
         png_files = sorted(dir_output.glob("*.png"), key=os.path.getctime, reverse=True)
 
         # Remove all files except the newest ones
@@ -568,3 +568,19 @@ class MeteoHist:
         self.clean_output_dir()
 
         return fig
+
+    @staticmethod
+    def show_random(dir_output="output"):
+        """
+        Show a random plot.
+        """
+        # Specify the directory
+        dir_output = Path(dir_output)
+
+        # Get all PNG files in the directory
+        files = dir_output.glob("*.png")
+
+        # Choose a random file
+        file = np.random.choice(list(files))
+
+        return file.as_posix()
