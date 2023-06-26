@@ -94,10 +94,15 @@ def get_lat_lon(query: str, lang: str = "en") -> dict:
     result = {}
     for i, loc in enumerate(location):
         if "lat" in loc:
-            if "city" in loc["address"]:
-                location_name = f"{loc['address']['city']}, {loc['address']['country']}"
-            else:
-                location_name = loc["display_name"]
+            keys = ["city", "town", "village", "hamlet", "suburb"]
+            location_name = loc["display_name"]
+
+            for key in keys:
+                if key in loc["address"]:
+                    location_name = (
+                        f"{loc['address'][key]}, {loc['address']['country']}"
+                    )
+                    break
 
             result[i] = {
                 "display_name": loc["display_name"],
