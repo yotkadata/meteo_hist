@@ -110,12 +110,15 @@ with main:
                     location = utils.get_lat_lon(location_name)
                     lat = location[0]["lat"]
                     lon = location[0]["lon"]
+                    url = (
+                        f"https://www.openstreetmap.org/"
+                        f"?mlat={lat}&mlon={lon}#map=6/{lat}/{lon}&layers=H"
+                    )
 
                     st.markdown(
-                        f"""<div style='text-align: right;'>
-                            Found location: <strong>{location[0]['location_name']}</strong> 
-                            (<a href='https://www.openstreetmap.org/?mlat={lat}&mlon={lon}#map=6/{lat}/{lon}&layers=H'>
-                            lat: {lat}, lon: {lon}</a>).
+                        f"""<div style="text-align: right;">
+                            Found location: <strong>{location[0]["location_name"]}</strong> 
+                            (<a href="{url}">lat: {lat}, lon: {lon}</a>).
                             </div>""",
                         unsafe_allow_html=True,
                     )

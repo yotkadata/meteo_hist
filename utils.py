@@ -412,7 +412,11 @@ class MeteoHist:
         fig.text(
             1,
             0,
-            f"Data: open-meteo.com, OSM  License: CC by-sa-nc 4.0  Graph: Jan Kühn, https://yotka.org",
+            (
+                "Data: open-meteo.com, OSM  "
+                "License: CC by-sa-nc 4.0  "
+                "Graph: Jan Kühn, https://yotka.org"
+            ),
             ha="right",
             va="bottom",
             fontsize=8,
@@ -519,7 +523,10 @@ class MeteoHist:
         axes.plot(
             self.df_t.index,
             self.df_t["mean"],
-            label=f"{self.metric['description']} {self.reference_period[0]}-{self.reference_period[1]}",
+            label=(
+                f"{self.metric['description']} "
+                f"{self.reference_period[0]}-{self.reference_period[1]}"
+            ),
             color="black",
         )
 
