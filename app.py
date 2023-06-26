@@ -20,13 +20,20 @@ with open("style.css", encoding="utf-8") as css:
 # Define the layout
 margin_1, main, margin_2 = st.columns([1, 10, 1])
 
+with margin_1:
+    # Show yotka logo
+    st.markdown(
+        "<a href='https://yotka.org' title='Back to yotka.org'><img src='https://yotka.org/files/logo.svg' width='60'></a>",
+        unsafe_allow_html=True,
+    )
+
 with main:
     col1, col2 = st.columns([1, 4])
 
     with col1:
         # Set page title
         st.markdown(
-            "<h2 style='padding-top:0;'>Historic<br />Temperature<br />Graph</h2>",
+            "<h2 style='padding-top:0;'>Historic Temperature Graph</h2>",
             unsafe_allow_html=True,
         )
 
@@ -97,7 +104,11 @@ with main:
                     lon = location[0]["lon"]
 
                     st.markdown(
-                        f"<div style='text-align: right;'>Found location: <strong>{location[0]['location_name']}</strong> (<a href='https://www.openstreetmap.org/?mlat={lat}&mlon={lon}#map=6/{lat}/{lon}&layers=H'>lat: {lat}, lon: {lon}</a>).</div>",
+                        f"""<div style='text-align: right;'>
+                            Found location: <strong>{location[0]['location_name']}</strong> 
+                            (<a href='https://www.openstreetmap.org/?mlat={lat}&mlon={lon}#map=6/{lat}/{lon}&layers=H'>
+                            lat: {lat}, lon: {lon}</a>).
+                            </div>""",
                         unsafe_allow_html=True,
                     )
                     # st.markdown(f"**Latitude:** {lat}, **Longitude:** {lon}.")

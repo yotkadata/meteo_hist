@@ -1,3 +1,24 @@
+@import url('https://fonts.googleapis.com/css2?family=Lato:wght@200&display=swap'); 
+
+html {
+    font-family: 'Lato', sans-serif;
+    font-size: 1.2rem;
+}
+
+/* Widget labels */
+.css-16idsys p {
+    font-size: 1.2rem;
+}
+
+/* Main container */
+.css-z5fcl4 {
+    padding-top: 2rem;
+}
+
+div.css-j5r0tf {
+    min-width: 300px;
+}
+
 /* Make Folium maps responsive */
 [title~="st.iframe"] {
     width: 100%;
