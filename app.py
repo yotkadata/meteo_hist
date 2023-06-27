@@ -108,6 +108,15 @@ with main:
         # Create button to show random graph
         random_graph = st.button("Show random")
 
+        st.markdown(
+            """
+            <br /><br /><br />
+            <a href="https://yotka.org" title="Back to yotka.org">yotka.org</a> | 
+            <a href="https://github.com/yotkadata/meteo_hist" title="Source code on GitHub">github.com</a>
+            """,
+            unsafe_allow_html=True,
+        )
+
         with col2:
             plot_placeholder = st.empty()
 
