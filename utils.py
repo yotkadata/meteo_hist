@@ -498,10 +498,11 @@ class MeteoHist:
         png_files = sorted(dir_output.glob("*.png"), key=os.path.getctime, reverse=True)
 
         # Remove all files except the newest ones
-        for file in png_files[num_files_to_keep:]:
-            os.remove(file)
+        if len(png_files) > num_files_to_keep:
+            for file in png_files[num_files_to_keep:]:
+                os.remove(file)
 
-        print(f"Removed {len(png_files) - num_files_to_keep} old files.")
+            print(f"Removed {len(png_files) - num_files_to_keep} old files.")
 
     def save_plot_to_file(self, fig: plt.Figure) -> None:
         """
@@ -514,16 +515,20 @@ class MeteoHist:
         # Make sure the output directory exists
         Path(self.settings["paths"]["output"]).mkdir(parents=True, exist_ok=True)
 
+        file_path = (
+            f"{self.settings['paths']['output']}/{location}-"
+            f"{metric}-{self.year}_"
+            f"ref-{self.reference_period[0]}-{self.reference_period[1]}.png"
+        )
+
         # Save the plot
         fig.savefig(
-            (
-                f"{self.settings['paths']['output']}/{location}-"
-                f"{metric}-{self.year}_"
-                f"ref-{self.reference_period[0]}-{self.reference_period[1]}.png"
-            ),
+            file_path,
             dpi=300,
             bbox_inches="tight",
         )
+
+        return file_path
 
     def create_plot(self) -> plt.Figure:
         """
@@ -583,12 +588,12 @@ class MeteoHist:
         )
 
         if self.save_file:
-            self.save_plot_to_file(fig)
+            file_path = self.save_plot_to_file(fig)
 
         # Remove old files
         self.clean_output_dir()
 
-        return fig, self.ref_nans
+        return fig, file_path, self.ref_nans
 
     @staticmethod
     def show_random(dir_output="output"):

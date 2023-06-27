@@ -103,8 +103,16 @@ with main:
 
         with col2:
             plot_placeholder = st.empty()
+
+            # Show a random graph on start (but not when the user clicks the "Create" button)
+            if "last_generated" not in st.session_state and not create_graph:
+                if "start_img" not in st.session_state:
+                    st.session_state["start_img"] = utils.MeteoHist.show_random()
+                plot_placeholder.image(st.session_state["start_img"])
+
             if create_graph and not location_name:
                 st.error("Please enter a location name.")
+
             elif create_graph and location_name:
                 with st.spinner("Searching for latitude and longitude..."):
                     # Get the latitude and longitude
@@ -144,7 +152,10 @@ with main:
                         highlight_max=peaks,
                         location=location[0]["location_name"],
                     )
-                    fig, ref_nans = plot.create_plot()
+                    fig, file_path, ref_nans = plot.create_plot()
+
+                    # Save the file path to session state
+                    st.session_state["last_generated"] = file_path
 
                     if ref_nans > 0.05:
                         st.warning(
