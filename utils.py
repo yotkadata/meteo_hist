@@ -4,6 +4,7 @@ Functions to create the plot.
 
 import datetime as dt
 import os
+import string
 from pathlib import Path
 
 import matplotlib as mpl
@@ -14,6 +15,7 @@ import pandas as pd
 import requests
 import seaborn as sns
 from matplotlib import ticker
+from unidecode import unidecode
 
 
 def calc_dates(ref_period: tuple[int, int], year: int) -> tuple[str, str]:
@@ -508,18 +510,22 @@ class MeteoHist:
         """
         Save the plot to a file.
         """
-        # Replace spaces with dashes
-        location = self.location.lower().replace(" ", "-").replace(",", "")
-        metric = self.metric["title"].lower().replace(" ", "-")
-
         # Make sure the output directory exists
         Path(self.settings["paths"]["output"]).mkdir(parents=True, exist_ok=True)
 
-        file_path = (
-            f"{self.settings['paths']['output']}/{location}-"
-            f"{metric}-{self.year}_"
+        file_name = (
+            f"{self.location}-{self.metric['title']}-{self.year}_"
             f"ref-{self.reference_period[0]}-{self.reference_period[1]}.png"
         )
+
+        # Convert special characters to ASCII, make lowercase, and replace spaces with dashes
+        file_name = unidecode(file_name).lower().replace(" ", "-")
+
+        # Define valid characters and remove any character not in valid_chars
+        valid_chars = f"-_.(){string.ascii_letters}{string.digits}"
+        file_name = "".join(c for c in file_name if c in valid_chars)
+
+        file_path = f"{self.settings['paths']['output']}/{file_name}"
 
         # Save the plot
         fig.savefig(
