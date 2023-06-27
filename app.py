@@ -201,6 +201,7 @@ with main:
                 with plot_placeholder:
                     img = utils.MeteoHist.show_random()
                     if img:
+                        st.session_state["start_img"] = img
                         st.image(img)
                     else:
                         st.error("No graph found.")
