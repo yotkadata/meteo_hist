@@ -6,3 +6,4 @@ Requests==2.31.0
 seaborn==0.12.2
 streamlit==1.23.1
 streamlit_folium==0.12.0
+Unidecode==1.3.6
