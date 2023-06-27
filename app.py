@@ -64,6 +64,13 @@ with main:
                 "1941-1970",
             ],
             index=3,
+            help="""
+                The reference period is used to calculate the historic average of 
+                the daily temperatures. The average is then used to compare the daily 
+                temperatures of the selected year. 1961-1990 is currently considered 
+                the best "long-term climate change assessment" by the World Meteorological
+                Organization (WMO).
+                """,
         )
 
         # Convert selection to tuple
