@@ -112,7 +112,8 @@ with main:
             """
             <br /><br /><br />
             <a href="https://yotka.org" title="Back to yotka.org">yotka.org</a> | 
-            <a href="https://github.com/yotkadata/meteo_hist" title="Source code on GitHub">github.com</a>
+            <a href="https://github.com/yotkadata/meteo_hist" title="Source code on GitHub">
+            github.com</a>
             """,
             unsafe_allow_html=True,
         )
