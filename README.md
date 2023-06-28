@@ -20,7 +20,7 @@ To get location data (lat/lon) for the input location, [**Openstreetmap's Nomina
 
 #### License
 
-The app and the maps it produces are published under a [**Creative Commons license (CC by-sa-nc 4.0)**](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en).
+The app and the plots it produces are published under a [**Creative Commons license (CC by-sa-nc 4.0)**](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en).
 
 #### Try it
 
