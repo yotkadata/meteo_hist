@@ -134,68 +134,74 @@ with main:
                 with st.spinner("Searching for latitude and longitude..."):
                     # Get the latitude and longitude
                     location = utils.get_lat_lon(location_name)
-                    lat = location[0]["lat"]
-                    lon = location[0]["lon"]
-                    url = (
-                        f"https://www.openstreetmap.org/"
-                        f"?mlat={lat}&mlon={lon}#map=6/{lat}/{lon}&layers=H"
-                    )
-
-                    st.markdown(
-                        f"""<div style="text-align: right;">
-                            Found location: <strong>{location[0]["location_name"]}</strong> 
-                            (<a href="{url}">lat: {lat}, lon: {lon}</a>).
-                            </div>""",
-                        unsafe_allow_html=True,
-                    )
-
-                # Show a progress bar
-                with st.spinner("Downloading data..."):
-                    # Download the data
-                    df = utils.get_data(
-                        lat,
-                        lon,
-                        year=year,
-                        reference_period=ref_period,
-                        metric=metrics[selected_metric]["name"],
-                    )
-
-                with st.spinner("Creating graph..."):
-                    plot = utils.MeteoHist(
-                        df,
-                        year,
-                        metric=metrics[selected_metric],
-                        reference_period=ref_period,
-                        highlight_max=peaks,
-                        location=location[0]["location_name"],
-                    )
-                    fig, file_path, ref_nans = plot.create_plot()
-
-                    # Save the file path to session state
-                    st.session_state["last_generated"] = file_path
-
-                    if ref_nans > 0.05:
-                        st.warning(
-                            f"Reference period contains {ref_nans:.2%} missing values."
+                    if len(location) > 0:
+                        lat = location[0]["lat"]
+                        lon = location[0]["lon"]
+                        url = (
+                            f"https://www.openstreetmap.org/"
+                            f"?mlat={lat}&mlon={lon}#map=6/{lat}/{lon}&layers=H"
                         )
 
-                with st.spinner("Show graph..."):
-                    # Show the figure
-                    with plot_placeholder:
-                        st.pyplot(fig)
+                        st.markdown(
+                            f"""<div style="text-align: right;">
+                                Found location: <strong>{location[0]["location_name"]}</strong> 
+                                (<a href="{url}">lat: {lat}, lon: {lon}</a>).
+                                </div>""",
+                            unsafe_allow_html=True,
+                        )
+                    else:
+                        st.error("Location not found. Please try again.")
 
-                st.write("")
+                if "lat" in locals() and "lon" in locals():
+                    # Show a progress bar
+                    with st.spinner("Downloading data..."):
+                        # Download the data
+                        df = utils.get_data(
+                            lat,
+                            lon,
+                            year=year,
+                            reference_period=ref_period,
+                            metric=metrics[selected_metric]["name"],
+                        )
 
-                with st.expander("Show map"):
-                    with st.spinner("Creating map..."):
-                        # Show a map
-                        m = folium.Map(location=[lat, lon], zoom_start=4, height=500)
-                        folium.Marker(
-                            [lat, lon],
-                            popup=location[0]["location_name"],
-                        ).add_to(m)
-                        folium.TileLayer("Stamen Terrain").add_to(m)
-                        folium_static(m)
+                    with st.spinner("Creating graph..."):
+                        plot = utils.MeteoHist(
+                            df,
+                            year,
+                            metric=metrics[selected_metric],
+                            reference_period=ref_period,
+                            highlight_max=peaks,
+                            location=location[0]["location_name"],
+                        )
+                        fig, file_path, ref_nans = plot.create_plot()
+
+                        # Save the file path to session state
+                        st.session_state["last_generated"] = file_path
+
+                        if ref_nans > 0.05:
+                            st.warning(
+                                f"Reference period contains {ref_nans:.2%} missing values."
+                            )
+
+                    with st.spinner("Show graph..."):
+                        # Show the figure
+                        with plot_placeholder:
+                            st.pyplot(fig)
+
+                    st.write("")
+
+                    with st.expander("Show map"):
+                        with st.spinner("Creating map..."):
+                            # Show a map
+                            m = folium.Map(
+                                location=[lat, lon], zoom_start=4, height=500
+                            )
+                            folium.Marker(
+                                [lat, lon],
+                                popup=location[0]["location_name"],
+                            ).add_to(m)
+                            folium.TileLayer("Stamen Terrain").add_to(m)
+                            folium_static(m)
 
             if random_graph:
                 st.write("Random graph from the list of graphs created before.")
