@@ -130,6 +130,7 @@ class MeteoHist:
         highlight_max: int = 1,
         save_file: bool = True,
         location: str = None,
+        coords: tuple = None,
         settings: dict = None,
     ):
         """
@@ -149,6 +150,8 @@ class MeteoHist:
             Whether to save the plot to a file, by default True.
         location : str, optional
             Location name, by default None.
+        coords : tuple, optional
+            Coordinates of the location, by default None.
         settings : dict, optional
             Settings dictionary, by default None.
         """
@@ -161,6 +164,7 @@ class MeteoHist:
         self.location = location
         self.settings = self.update_settings(settings)
         self.ref_nans = 0
+        self.coords = coords
 
     def update_settings(self, settings: dict) -> None:
         """
@@ -430,6 +434,23 @@ class MeteoHist:
             alpha=0.5,
         )
 
+    def add_coordinates(self, fig):
+        """
+        Add coordinates to the plot.
+        """
+        if self.coords is None:
+            return
+
+        fig.text(
+            0,
+            0,
+            f"lat: {self.coords[0]}, lon: {self.coords[1]}",
+            ha="left",
+            va="bottom",
+            fontsize=8,
+            alpha=0.5,
+        )
+
     def plot_diff(self, axes, cmap, method="above"):
         """
         Plot the difference between the year's value and the long-term mean.
@@ -595,8 +616,12 @@ class MeteoHist:
         # Add data source
         self.add_data_source(fig)
 
+        # Add coordinates
+        self.add_coordinates(fig)
+
         # Adjust the margin
         fig.subplots_adjust(
+            left=0,
             right=1,
             top=0.85,
         )

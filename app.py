@@ -172,6 +172,7 @@ with main:
                             reference_period=ref_period,
                             highlight_max=peaks,
                             location=location[0]["location_name"],
+                            coords=(lat, lon),
                         )
                         fig, file_path, ref_nans = plot.create_plot()
 
