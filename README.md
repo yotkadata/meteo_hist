@@ -10,7 +10,7 @@ The reference period **defaults to 1961-1990** which [according](https://public.
 
 The **peaks** on the graph show how the displayed year's temperatures deviate from the mean of the reference period. The more and the higher the red peaks, the more "hotter days than usual" have been observed. The blue peaks indicate days colder than the historic mean.
 
-The map is created using Python's **Matplotlib** library.
+The plot is created using Python's **Matplotlib** library.
 
 #### Data
 
