@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 import requests
 import seaborn as sns
+import streamlit as st
 from matplotlib import ticker
 from unidecode import unidecode
 
@@ -38,6 +39,7 @@ def calc_dates(ref_period: tuple[int, int], year: int) -> tuple[str, str]:
     return date_start, date_end
 
 
+@st.cache_data
 def get_data(
     lat: float,
     lon: float,
@@ -78,6 +80,7 @@ def get_data(
     return df_t
 
 
+@st.cache_data
 def get_lat_lon(query: str, lang: str = "en") -> dict:
     """
     Get latitude and longitude from a query string.
