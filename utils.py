@@ -126,7 +126,7 @@ class MeteoHist:
         df_t: pd.DataFrame,
         year: int,
         metric: str,
-        reference_period: tuple = (1991, 2020),
+        reference_period: tuple = (1961, 1990),
         highlight_max: int = 1,
         save_file: bool = True,
         location: str = None,
