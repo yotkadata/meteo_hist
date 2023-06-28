@@ -185,6 +185,7 @@ class MeteoHist:
                 "output": "output",
             },
             "num_files_to_keep": 30,
+            "max_annotation": 0,
         }
 
         if isinstance(settings, dict):
@@ -261,6 +262,10 @@ class MeteoHist:
         # Get next integer multiple of 2
         # (0.1 added for edge case where maximum is a multiple of 2)
         maximum = int(np.ceil((maximum + 0.1) / 2)) * 2
+
+        # Raise maximum if annotation is higher
+        if self.settings["max_annotation"] > maximum:
+            maximum = int(np.ceil((self.settings["max_annotation"] + 0.1) / 2)) * 2
 
         return minimum, maximum
 
@@ -485,6 +490,9 @@ class MeteoHist:
                 verticalalignment="bottom",
             )
 
+        # Update the maximum annotation in the settings
+        self.settings["max_annotation"] = df_max[f"{self.year}_above"].max() + 1
+
     def clean_output_dir(self, num_files_to_keep: int = None) -> None:
         """
         Remove old files from the output directory.
@@ -546,9 +554,6 @@ class MeteoHist:
         # Create a new figure and axis
         fig, axes = plt.subplots(figsize=(10, 6), dpi=100)
 
-        # Remove borders
-        self.prepare_axes(axes)
-
         # Add heading
         self.add_heading()
 
@@ -572,12 +577,15 @@ class MeteoHist:
         # Plot value below mean
         self.plot_diff(axes, cmap=self.settings["colors"]["cmap_below"], method="below")
 
-        # Add annotations
-        self.add_annotations(axes)
-
         # Annotate maximum values
         if self.highlight_max > 0:
             self.annotate_max_values(axes)
+
+        # Prepare axes removing borders and getting y-axis limits
+        self.prepare_axes(axes)
+
+        # Add annotations
+        self.add_annotations(axes)
 
         # Make the first and last x-axis label invisible
         if axes.get_xticklabels(minor=True):
