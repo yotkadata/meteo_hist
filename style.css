@@ -7,12 +7,17 @@ html {
 
 /* Widget labels */
 .css-16idsys p {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
+}
+
+/* Margin below widget labels */
+.css-81oif8 {
+    margin-bottom: 0.1rem;
 }
 
 /* Main container */
 .css-z5fcl4 {
-    padding-top: 2rem;
+    padding-top: 1.5rem;
 }
 
 div.css-j5r0tf {
