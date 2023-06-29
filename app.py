@@ -9,7 +9,7 @@ from streamlit_folium import folium_static
 import utils
 
 # Set page title
-st.set_page_config(page_title="Historic Temperature Graph", layout="wide")
+st.set_page_config(page_title="Historical Temperature Graph", layout="wide")
 
 # Include custom CSS
 with open("style.css", encoding="utf-8") as css:
@@ -35,7 +35,7 @@ with main:
     with col1:
         # Set page title
         st.markdown(
-            "<h2 style='padding-top:0;'>Historic Temperature Graph</h2>",
+            "<h2 style='padding-top:0;'>Historical Temperature Graph</h2>",
             unsafe_allow_html=True,
         )
 
@@ -65,7 +65,7 @@ with main:
             ],
             index=3,
             help="""
-                The reference period is used to calculate the historic average of 
+                The reference period is used to calculate the historical average of 
                 the daily temperatures. The average is then used to compare the daily 
                 temperatures of the selected year. 1961-1990 is currently considered 
                 the best "long-term climate change assessment" by the World Meteorological

@@ -121,7 +121,7 @@ def get_lat_lon(query: str, lang: str = "en") -> dict:
 
 class MeteoHist:
     """
-    Class to create a plot of a year's meteo values compared to historic values.
+    Class to create a plot of a year's meteo values compared to historical values.
     """
 
     def __init__(

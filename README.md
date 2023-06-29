@@ -1,6 +1,6 @@
 ![Header image](header.png)
 
-# MeteoHist - Historic Temperature Graph
+# MeteoHist - Historical Temperature Graph
 
 ### A streamlit app to create temperature graphs for places around the world.
 
@@ -8,7 +8,7 @@ This app allows to create temperature graphs that compare the **mean temperature
 
 The reference period **defaults to 1961-1990** which [according](https://public.wmo.int/en/media/news/it%E2%80%99s-warmer-average-what-average) to the World Meteorological Organization (WMO) is currently the **best "long-term climate change assessment"**. Other reference periods of 30 years each can be selected, too.
 
-The **peaks** on the graph show how the displayed year's temperatures deviate from the mean of the reference period. The more and the higher the red peaks, the more "hotter days than usual" have been observed. The blue peaks indicate days colder than the historic mean.
+The **peaks** on the graph show how the displayed year's temperatures deviate from the mean of the reference period. The more and the higher the red peaks, the more "hotter days than usual" have been observed. The blue peaks indicate days colder than the historical mean.
 
 The plot is created using Python's **Matplotlib** library.
 
