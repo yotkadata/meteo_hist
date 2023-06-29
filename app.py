@@ -8,6 +8,9 @@ from streamlit_folium import folium_static
 
 import utils
 
+# Create empty dict for plot settings
+settings = {}
+
 # Set page title
 st.set_page_config(page_title="Historical Temperature Graph", layout="wide")
 
@@ -45,6 +48,17 @@ with col1:
             """,
     )
 
+    # Checkbox to decide if peaks should be emphasized
+    settings["peak_alpha"] = st.checkbox(
+        "Emphasize peaks",
+        value=True,
+        help="""
+            If checked, peaks that leave the gray area between the 5 and 95 
+            percentile will be highlighted more.
+            """,
+    )
+
+    # Selectbox for reference period
     select_ref_period = st.selectbox(
         "Reference period:",
         [
@@ -169,6 +183,7 @@ with col1:
                         highlight_max=peaks,
                         location=location[0]["location_name"],
                         coords=(lat, lon),
+                        settings=settings,
                     )
                     fig, file_path, ref_nans = plot.create_plot()
 

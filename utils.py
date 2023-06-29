@@ -158,6 +158,7 @@ class MeteoHist:
         settings : dict, optional
             Settings dictionary, by default None.
         """
+        self.settings = self.update_settings(settings)
         self.df_t = self.transform_df(df_t, year, reference_period)
         self.year = year
         self.metric = metric
@@ -165,7 +166,6 @@ class MeteoHist:
         self.highlight_max = highlight_max
         self.save_file = save_file
         self.location = location
-        self.settings = self.update_settings(settings)
         self.ref_nans = 0
         self.coords = coords
 
@@ -193,6 +193,7 @@ class MeteoHist:
             },
             "num_files_to_keep": 100,
             "max_annotation": 0,
+            "peak_alpha": True,
         }
 
         if isinstance(settings, dict):
@@ -251,6 +252,15 @@ class MeteoHist:
 
         # Add column that holds the difference between the year's value and the mean
         df_g[f"{year}_diff"] = df_g[f"{year}"] - df_g["mean"]
+
+        if self.settings["peak_alpha"]:
+            # Add column that holds normalized difference between -1 and 1
+            df_g[f"{year}_alpha"] = df_g.apply(
+                lambda x: 1
+                if x[f"{year}"] > x["p95"] or x[f"{year}"] < x["p05"]
+                else 0.6,
+                axis=1,
+            ).fillna(0)
 
         return df_g
 
@@ -473,11 +483,20 @@ class MeteoHist:
         colors = colormap(norm(diff))
 
         for i in range(len(self.df_t.index) - 1):
+            # Set alpha values
+            alpha = (
+                self.df_t[f"{self.year}_alpha"].iloc[i]
+                if self.settings["peak_alpha"]
+                else 1
+            )
+            # Plot area between mean and year's value
             axes.fill_between(
                 self.df_t.index[i : i + 2],
                 self.df_t[f"{self.year}_{method}"].iloc[i : i + 2],
                 self.df_t["mean"].iloc[i : i + 2],
                 color=colors[i],
+                alpha=alpha,
+                edgecolor="none",
             )
 
     def annotate_max_values(self, axes):
