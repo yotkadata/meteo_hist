@@ -52,7 +52,7 @@ with col1:
         # Checkbox to decide if peaks should be emphasized
         settings["peak_alpha"] = st.checkbox(
             "Emphasize peaks",
-            value=True,
+            value=False,
             help="""
                 If checked, peaks that leave the gray area between the 5 and 95 
                 percentile will be highlighted more.

@@ -193,7 +193,7 @@ class MeteoHist:
             },
             "num_files_to_keep": 100,
             "max_annotation": 0,
-            "peak_alpha": True,
+            "peak_alpha": False,
         }
 
         if isinstance(settings, dict):
