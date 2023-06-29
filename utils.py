@@ -191,7 +191,7 @@ class MeteoHist:
             "paths": {
                 "output": "output",
             },
-            "num_files_to_keep": 30,
+            "num_files_to_keep": 100,
             "max_annotation": 0,
         }
 
