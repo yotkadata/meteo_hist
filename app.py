@@ -29,7 +29,7 @@ with col1:
 
     with st.form("settings_form"):
         # Create a text input widget for location name
-        location_name = st.text_input("City to display:")
+        location_name = st.text_input("Location to display:")
 
         # Create input widget for year
         year = st.selectbox(
@@ -46,16 +46,6 @@ with col1:
             help="""
                 Number of maximum peaks to be annotated. If peaks are close together,
                 the text might overlap. In this case, reduce the number of peaks.
-                """,
-        )
-
-        # Checkbox to decide if peaks should be emphasized
-        settings["peak_alpha"] = st.checkbox(
-            "Emphasize peaks",
-            value=False,
-            help="""
-                If checked, peaks that leave the gray area between the 5 and 95 
-                percentile will be highlighted more.
                 """,
         )
 
@@ -87,27 +77,54 @@ with col1:
                 int(select_ref_period.split("-")[1]),
             )
 
-        metrics = {
-            "Mean temperature": {
-                "name": "temperature_2m_mean",
-                "title": "Mean temperatures",
-                "subtitle": "Compared to historical daily mean temperatures",
-                "description": "Mean Temperature",
-            },
-            "Minimum temperature": {
-                "name": "temperature_2m_min",
-                "title": "Minimum temperatures",
-                "subtitle": "Compared to average of historical daily minimum temperatures",
-                "description": "Average of minimum temperatures",
-            },
-            "Maximum temperature": {
-                "name": "temperature_2m_max",
-                "title": "Maximum temperatures",
-                "subtitle": "Compared to average of historical daily maximum temperatures",
-                "description": "Average of maximum temperatures",
-            },
-        }
-        selected_metric = st.selectbox("Metric:", list(metrics.keys()))
+        with st.expander("Advanced settings"):
+            metrics = {
+                "Mean temperature": {
+                    "name": "temperature_2m_mean",
+                    "title": "Mean temperatures",
+                    "subtitle": "Compared to historical daily mean temperatures",
+                    "description": "Mean Temperature",
+                },
+                "Minimum temperature": {
+                    "name": "temperature_2m_min",
+                    "title": "Minimum temperatures",
+                    "subtitle": "Compared to average of historical daily minimum temperatures",
+                    "description": "Average of minimum temperatures",
+                },
+                "Maximum temperature": {
+                    "name": "temperature_2m_max",
+                    "title": "Maximum temperatures",
+                    "subtitle": "Compared to average of historical daily maximum temperatures",
+                    "description": "Average of maximum temperatures",
+                },
+            }
+            selected_metric = st.selectbox("Metric:", list(metrics.keys()))
+
+            # Select method to calculate peaks
+            peak_method = st.radio(
+                "Peak method - Difference to:",
+                ["Historical mean", "95 percentile"],
+                index=0,
+                help="""
+                    Method to determine the peaks. Either the difference to the historical
+                    mean or the difference to the 95 percentile. The percentile method focuses
+                    more on extreme events, while the mean method focuses more on the
+                    difference to the historical average.
+                    """,
+            )
+            settings["peak_method"] = (
+                "mean" if peak_method == "Historical mean" else "percentile"
+            )
+
+            # Checkbox to decide if peaks should be emphasized
+            settings["peak_alpha"] = st.checkbox(
+                "Emphasize peaks",
+                value=False,
+                help="""
+                    If checked, peaks that leave the gray area between the 5 and 95 
+                    percentile will be highlighted more.
+                    """,
+            )
 
         # Create button to start the analysis
         create_graph = st.form_submit_button("Create")

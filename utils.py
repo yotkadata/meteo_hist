@@ -503,11 +503,23 @@ class MeteoHist:
         """
         Annotate maximum values.
         """
+        # By default, sort by difference between year's value and mean
         df_max = (
             self.df_t.sort_values(f"{self.year}_diff", ascending=False)
             .loc[: self.highlight_max]
             .copy()
         )
+
+        # If peak method is percentile, sort by difference between year's value and p95
+        if self.settings["peak_method"] == "percentile":
+            df_max = self.df_t.copy()
+            df_max[f"{self.year}_diffp95"] = df_max[f"{self.year}"] - df_max["p95"]
+
+            df_max = (
+                df_max.sort_values(f"{self.year}_diffp95", ascending=False)
+                .loc[: self.highlight_max]
+                .copy()
+            )
 
         for i in range(self.highlight_max):
             axes.scatter(
