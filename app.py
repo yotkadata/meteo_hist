@@ -2,43 +2,131 @@
 Streamlit app.
 """
 
+import extra_streamlit_components as stx
 import folium
+import matplotlib.pyplot as plt
+import pandas as pd
 import streamlit as st
 from streamlit_folium import folium_static
 
 import utils
 
-# Create empty dict for plot settings
-settings = {}
 
-# Set page title
-st.set_page_config(page_title="Historical Temperature Graph", layout="wide")
+def build_location_by_name(location: str) -> tuple[float, float, str]:
+    """
+    Build location by name.
+    """
+    with st.spinner("Searching for latitude and longitude..."):
+        # Get the latitude and longitude
+        location = utils.get_lat_lon(location)
 
-# Include custom CSS
-with open("style.css", encoding="utf-8") as css:
-    st.markdown(f"<style>{css.read()}</style>", unsafe_allow_html=True)
+        if len(location) == 0:
+            message_box.error("Location not found. Please try again.")
+            return None, None, None
 
-col1, col2 = st.columns([1, 3])
+        lat = float(location[0]["lat"])
+        lon = float(location[0]["lon"])
+        location_name = location[0]["location_name"]
 
-with col1:
-    # Set page title
-    st.markdown(
-        "<h3 style='padding-top:0;'>Historical Temperature Graph</h2>",
-        unsafe_allow_html=True,
-    )
+        return lat, lon, location_name
+
+
+def build_location_by_coords(lat: float, lon: float, display_name: str) -> str:
+    """
+    Build location by coordinates.
+    """
+    with st.spinner("Searching for location name..."):
+        # Get the location name
+        location = utils.get_location((lat, lon))
+
+        if location is None and display_name is None:
+            location = None
+            message_box.error("Location not found. Please provide a display name.")
+            return None
+
+        if location is None and display_name is not None:
+            location = display_name
+            message_box.info("Location not found. Using display name.")
+
+        return location
+
+
+def build_form(method: str = "by_name") -> dict:
+    """
+    Build form for input values.
+    """
+    form_values = {"method": method}
 
     with st.form("settings_form"):
-        # Create a text input widget for location name
-        location_name = st.text_input("Location to display:")
+        if method == "by_coords":
+            # Create input widgets for lat, lon, and display_name
+            lat_col, lon_col = st.columns([1, 1])
 
-        # Create input widget for year
-        year = st.selectbox(
-            "Year to show:",
-            list(range(2023, 1939, -1)),
-        )
+            with lat_col:
+                form_values["lat"] = st.text_input("Latitude:")
+
+            with lon_col:
+                form_values["lon"] = st.text_input("Longitude:")
+
+            form_values["display_name"] = st.text_input(
+                "Display name:",
+                help="""In case no display name can be found for the
+                given lat/lon coordinates, this name will be used""",
+            )
+            if len(form_values["display_name"]) == 0:
+                form_values["display_name"] = None
+
+        if method == "by_name":
+            # Create a text input widget for location name
+            form_values["location"] = st.text_input(
+                "Location to display:",
+                help="""Write the name of the location you want to display.
+                A search at Openstreetmap's Nominatim will be performed to
+                find the location and get latitude and longitude. If the
+                location cannot be found, please try again with a more
+                specific name.""",
+            )
+
+        year_col, ref_col = st.columns([1, 1])
+
+        with year_col:
+            # Create input widget for year
+            form_values["year"] = st.selectbox(
+                "Year to show:",
+                list(range(2023, 1939, -1)),
+            )
+
+        with ref_col:
+            # Selectbox for reference period
+            select_ref_period = st.selectbox(
+                "Reference period:",
+                [
+                    "1991-2020",
+                    "1981-2010",
+                    "1971-2000",
+                    "1961-1990",
+                    "1951-1980",
+                    "1941-1970",
+                ],
+                index=3,
+                help="""
+                    The reference period is used to calculate the historical average of
+                    the daily temperatures. The average is then used to compare the daily
+                    temperatures of the selected year. 1961-1990 is currently considered
+                    the best "long-term climate change assessment" by the World Meteorological
+                    Organization (WMO).
+                    """,
+            )
+
+            # Convert selection to tuple
+            if select_ref_period:
+                form_values["ref_period"] = (
+                    int(select_ref_period.split("-")[0]),
+                    int(select_ref_period.split("-")[1]),
+                )
 
         # Number of peaks to annotate
-        peaks = st.slider(
+        form_values["peaks"] = st.slider(
             "Peaks to be annotated:",
             min_value=0,
             max_value=5,
@@ -48,34 +136,6 @@ with col1:
                 the text might overlap. In this case, reduce the number of peaks.
                 """,
         )
-
-        # Selectbox for reference period
-        select_ref_period = st.selectbox(
-            "Reference period:",
-            [
-                "1991-2020",
-                "1981-2010",
-                "1971-2000",
-                "1961-1990",
-                "1951-1980",
-                "1941-1970",
-            ],
-            index=3,
-            help="""
-                The reference period is used to calculate the historical average of 
-                the daily temperatures. The average is then used to compare the daily 
-                temperatures of the selected year. 1961-1990 is currently considered 
-                the best "long-term climate change assessment" by the World Meteorological
-                Organization (WMO).
-                """,
-        )
-
-        # Convert selection to tuple
-        if select_ref_period:
-            ref_period = (
-                int(select_ref_period.split("-")[0]),
-                int(select_ref_period.split("-")[1]),
-            )
 
         with st.expander("Advanced settings"):
             metrics = {
@@ -99,6 +159,7 @@ with col1:
                 },
             }
             selected_metric = st.selectbox("Metric:", list(metrics.keys()))
+            form_values["metric"] = metrics[selected_metric]
 
             # Select method to calculate peaks
             peak_method = st.radio(
@@ -112,12 +173,12 @@ with col1:
                     difference to the historical average.
                     """,
             )
-            settings["peak_method"] = (
+            form_values["peak_method"] = (
                 "mean" if peak_method == "Historical mean" else "percentile"
             )
 
             # Checkbox to decide if peaks should be emphasized
-            settings["peak_alpha"] = st.checkbox(
+            form_values["peak_alpha"] = st.checkbox(
                 "Emphasize peaks",
                 value=False,
                 help="""
@@ -127,7 +188,162 @@ with col1:
             )
 
         # Create button to start the analysis
-        create_graph = st.form_submit_button("Create")
+        form_values["create_graph"] = st.form_submit_button("Create")
+
+        if form_values["create_graph"]:
+            return form_values
+
+        return None
+
+
+def process_form(form_values: dict) -> dict:
+    """
+    Process form values.
+    """
+    # Sanity checks
+    if form_values is None:
+        message_box.error("Please fill out the form.")
+        return None
+
+    if form_values["method"] == "by_name":
+        if len(form_values["location"]) == 0:
+            message_box.error("Please enter a location name.")
+            return None
+
+        lat, lon, location = build_location_by_name(form_values["location"])
+        form_values["lat"] = lat
+        form_values["lon"] = lon
+        form_values["location_name"] = location
+
+    if form_values["method"] == "by_coords":
+        if len(form_values["lat"]) == 0 or len(form_values["lon"]) == 0:
+            message_box.error("Please enter latitude and longitude.")
+            return None
+
+        try:
+            form_values["lat"] = float(form_values["lat"])
+            form_values["lon"] = float(form_values["lon"])
+        except ValueError:
+            message_box.error("Latitude and longitude must be numbers.")
+            return None
+
+        if form_values["lat"] < -90 or form_values["lat"] > 90:
+            message_box.error("Latitude must be between -90 and 90.")
+            return None
+
+        if form_values["lon"] < -180 or form_values["lon"] > 180:
+            message_box.error("Longitude must be between -180 and 180.")
+            return None
+
+        form_values["location_name"] = build_location_by_coords(
+            form_values["lat"], form_values["lon"], form_values["display_name"]
+        )
+        if form_values["location_name"] is None:
+            return None
+
+    return form_values
+
+
+def download_data(inputs: dict) -> pd.DataFrame():
+    """
+    Download data from open-meteo.com.
+    """
+    if not isinstance(inputs, dict):
+        return None
+
+    with st.spinner("Downloading data..."):
+        url = (
+            f"https://www.openstreetmap.org/"
+            f"?mlat={inputs['lat']}&mlon={inputs['lon']}"
+            f"#map=6/{inputs['lat']}/{inputs['lon']}&layers=H"
+        )
+
+        st.markdown(
+            f"""<div style="text-align: right;">
+                Using location: <strong>{inputs["location_name"]}</strong>
+                (<a href="{url}">lat: {inputs["lat"]}, lon: {inputs["lon"]}</a>).
+                </div>""",
+            unsafe_allow_html=True,
+        )
+
+        # Download the data
+        data = utils.get_data(
+            inputs["lat"],
+            inputs["lon"],
+            year=inputs["year"],
+            reference_period=inputs["ref_period"],
+            metric=inputs["metric"]["name"],
+        )
+
+        return data
+
+
+def create_graph(data: pd.DataFrame, inputs: dict) -> plt.Figure:
+    """
+    Create the graph.
+    """
+    with st.spinner("Creating graph..."):
+        plot = utils.MeteoHist(
+            data,
+            inputs["year"],
+            metric=inputs["metric"],
+            reference_period=inputs["ref_period"],
+            highlight_max=inputs["peaks"],
+            location=inputs["location_name"],
+            coords=(inputs["lat"], inputs["lon"]),
+            settings=inputs,
+        )
+        figure, file_path, ref_nans = plot.create_plot()
+
+        # Save the file path to session state
+        st.session_state["last_generated"] = file_path
+
+        if ref_nans > 0.05:
+            st.warning(f"Reference period contains {ref_nans:.2%} missing values.")
+
+        return figure
+
+
+# Set page title
+st.set_page_config(page_title="Historical Temperature Graph", layout="wide")
+
+# Include custom CSS
+with open("style.css", encoding="utf-8") as css:
+    st.markdown(f"<style>{css.read()}</style>", unsafe_allow_html=True)
+
+col1, col2 = st.columns([1, 3])
+
+with col1:
+    # Set page title
+    st.markdown(
+        "<h3 style='padding-top:0;'>Historical Temperature Graph</h2>",
+        unsafe_allow_html=True,
+    )
+
+    message_box = st.empty()
+
+    # Create tab bar to select method for location input
+    active_tab = stx.tab_bar(
+        data=[
+            stx.TabBarItemData(
+                id="by_name",
+                title="By name",
+                description="Location by name",
+            ),
+            stx.TabBarItemData(
+                id="by_coords",
+                title="By lat/lon",
+                description="Location by coordinates",
+            ),
+        ],
+        default="by_name",
+    )
+
+    # Build form based on selected tab
+    if active_tab == "by_name":
+        input_values = build_form(method="by_name")
+    elif active_tab == "by_coords":
+        input_values = build_form(method="by_coords")
 
     # Create button to show random graph
     random_graph = st.button("Show random")
@@ -145,68 +361,21 @@ with col2:
     plot_placeholder = st.empty()
 
     # Show a random graph on start (but not when the user clicks the "Create" button)
-    if "last_generated" not in st.session_state and not create_graph:
+    if "last_generated" not in st.session_state and input_values is None:
         if "start_img" not in st.session_state:
             st.session_state["start_img"] = utils.MeteoHist.show_random()
         plot_placeholder.image(st.session_state["start_img"])
 
-    if create_graph and not location_name:
-        st.error("Please enter a location name.")
+    if input_values is not None:
+        # Process form values
+        input_processed = process_form(input_values)
 
-    elif create_graph and location_name:
-        with st.spinner("Searching for latitude and longitude..."):
-            # Get the latitude and longitude
-            location = utils.get_lat_lon(location_name)
-            if len(location) > 0:
-                lat = location[0]["lat"]
-                lon = location[0]["lon"]
-                url = (
-                    f"https://www.openstreetmap.org/"
-                    f"?mlat={lat}&mlon={lon}#map=6/{lat}/{lon}&layers=H"
-                )
+        # Download data
+        meteo_data = download_data(input_processed)
 
-                st.markdown(
-                    f"""<div style="text-align: right;">
-                        Found location: <strong>{location[0]["location_name"]}</strong> 
-                        (<a href="{url}">lat: {lat}, lon: {lon}</a>).
-                        </div>""",
-                    unsafe_allow_html=True,
-                )
-            else:
-                st.error("Location not found. Please try again.")
-
-        if "lat" in locals() and "lon" in locals():
-            # Show a progress bar
-            with st.spinner("Downloading data..."):
-                # Download the data
-                df = utils.get_data(
-                    lat,
-                    lon,
-                    year=year,
-                    reference_period=ref_period,
-                    metric=metrics[selected_metric]["name"],
-                )
-
-            with st.spinner("Creating graph..."):
-                plot = utils.MeteoHist(
-                    df,
-                    year,
-                    metric=metrics[selected_metric],
-                    reference_period=ref_period,
-                    highlight_max=peaks,
-                    location=location[0]["location_name"],
-                    coords=(lat, lon),
-                    settings=settings,
-                )
-                fig, file_path, ref_nans = plot.create_plot()
-
-                # Save the file path to session state
-                st.session_state["last_generated"] = file_path
-
-                if ref_nans > 0.05:
-                    st.warning(
-                        f"Reference period contains {ref_nans:.2%} missing values."
-                    )
+        if meteo_data is not None:
+            # Create figure for the graph
+            fig = create_graph(meteo_data, input_processed)
 
             with st.spinner("Show graph..."):
                 # Show the figure
@@ -218,10 +387,14 @@ with col2:
             with st.expander("Show map"):
                 with st.spinner("Creating map..."):
                     # Show a map
-                    m = folium.Map(location=[lat, lon], zoom_start=4, height=500)
+                    m = folium.Map(
+                        location=[input_processed["lat"], input_processed["lon"]],
+                        zoom_start=4,
+                        height=500,
+                    )
                     folium.Marker(
-                        [lat, lon],
-                        popup=location[0]["location_name"],
+                        [input_processed["lat"], input_processed["lon"]],
+                        popup=input_processed["location_name"],
                     ).add_to(m)
                     folium.TileLayer("Stamen Terrain").add_to(m)
                     folium_static(m)

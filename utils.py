@@ -119,6 +119,65 @@ def get_lat_lon(query: str, lang: str = "en") -> dict:
     return result
 
 
+@st.cache_data
+def get_location(coords: tuple[float, float], lang: str = "en") -> str:
+    """
+    Get location name from latitude and longitude.
+    """
+    lat, lon = coords
+
+    url = (
+        "https://nominatim.openstreetmap.org/reverse?"
+        f"lat={lat}&lon={lon}&format=json&accept-language={lang}&zoom=18"
+    )
+
+    try:
+        # Get the data from the API
+        location = requests.get(url, timeout=30)
+
+    # Raise an error if the status code is not 200
+    except requests.exceptions.RequestException as excpt:
+        raise SystemExit(excpt) from excpt
+
+    # Convert the response to JSON
+    location = location.json()
+
+    # Check if an error was returned
+    if "error" in location:
+        return None
+
+    # Get the location name
+    if "address" in location:
+        # Set default in case no location name is found
+        location_name = location["display_name"]
+
+        # Keys to look for in the address dictionary
+        keys = [
+            "city",
+            "town",
+            "village",
+            "hamlet",
+            "suburb",
+            "municipality",
+            "district",
+            "county",
+            "state",
+        ]
+        for key in keys:
+            # If the key is in the address dictionary, use it and stop
+            if key in location["address"]:
+                location_name = f"{location['address'][key]}"
+                break
+
+        # Add the country name if it is in the address dictionary
+        if "country" in location["address"]:
+            location_name += f", {location['address']['country']}"
+
+        return location_name
+
+    return None
+
+
 class MeteoHist:
     """
     Class to create a plot of a year's meteo values compared to historical values.
@@ -128,7 +187,7 @@ class MeteoHist:
         self,
         df_t: pd.DataFrame,
         year: int,
-        metric: str,
+        metric: dict,
         reference_period: tuple = (1961, 1990),
         highlight_max: int = 1,
         save_file: bool = True,
@@ -143,7 +202,7 @@ class MeteoHist:
             Dataframe with metric data.
         year : int
             Year to plot.
-        metric : str
+        metric : dict
             Metric to plot.
         reference_period : tuple of ints
             Reference period to compare the data, by default (1991, 2020).
