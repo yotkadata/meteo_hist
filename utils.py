@@ -7,6 +7,7 @@ import os
 import string
 from pathlib import Path
 
+import lowess
 import matplotlib as mpl
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
@@ -253,6 +254,11 @@ class MeteoHist:
             "num_files_to_keep": 100,
             "max_annotation": 0,
             "peak_alpha": False,
+            "smooth": {
+                "apply": True,
+                "bandwidth": 0.1,
+                "polynomial": 1,
+            },
         }
 
         if isinstance(settings, dict):
@@ -288,9 +294,21 @@ class MeteoHist:
         self.ref_nans = df_g["value"].isna().sum() / len(df_g) if len(df_g) > 0 else 0
 
         # Group by day of year and calculate min, 5th percentile, mean, 95th percentile, and max
-        df_g = df_g.groupby("dayofyear")["value"].agg(
-            ["min", self.p05, "mean", self.p95, "max"]
+        df_g = (
+            df_g.groupby("dayofyear")["value"]
+            .agg(["min", self.p05, "mean", self.p95, "max"])
+            .reset_index()
         )
+
+        if self.settings["smooth"]["apply"]:
+            # Add smooting using LOESS
+            for col in ["p05", "mean", "p95"]:
+                df_g[col] = lowess.lowess(
+                    df_g["dayofyear"],
+                    df_g[col],
+                    bandwidth=self.settings["smooth"]["bandwidth"],
+                    polynomialDegree=self.settings["smooth"]["polynomial"],
+                )
 
         # Add column with year's value
         df_g[f"{year}"] = df_f[df_f["date"].dt.year == year][

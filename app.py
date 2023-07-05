@@ -161,6 +161,17 @@ def build_form(method: str = "by_name") -> dict:
             selected_metric = st.selectbox("Metric:", list(metrics.keys()))
             form_values["metric"] = metrics[selected_metric]
 
+            # Slider to apply LOESS smoothing
+            form_values["smooth"] = st.slider(
+                "Smoothing:",
+                min_value=0,
+                max_value=5,
+                value=1,
+                help="""Degree of smoothing to apply to the historical data. 
+                0 means no smoothing. The higher the value, the more smoothing 
+                is applied. Smoothing is done using LOESS.""",
+            )
+
             # Select method to calculate peaks
             peak_method = st.radio(
                 "Peak method - Difference to:",
@@ -240,6 +251,16 @@ def process_form(form_values: dict) -> dict:
         )
         if form_values["location_name"] is None:
             return None
+
+    # Calculate values for smoothing
+    if form_values["smooth"] == 0:
+        form_values["smooth"] = {"apply": False}
+    else:
+        form_values["smooth"] = {
+            "apply": True,
+            "polynomial": 6 - form_values["smooth"],
+            "bandwidth": 0.1,
+        }
 
     return form_values
 
