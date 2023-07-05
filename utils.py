@@ -190,8 +190,6 @@ class MeteoHist:
         year: int,
         metric: dict,
         reference_period: tuple = (1961, 1990),
-        highlight_max: int = 1,
-        save_file: bool = True,
         location: str = None,
         coords: tuple = None,
         settings: dict = None,
@@ -207,10 +205,6 @@ class MeteoHist:
             Metric to plot.
         reference_period : tuple of ints
             Reference period to compare the data, by default (1991, 2020).
-        highlight_max : int, optional
-            Number of peaks to highlight, by default 1.
-        save_file : bool, optional
-            Whether to save the plot to a file, by default True.
         location : str, optional
             Location name, by default None.
         coords : tuple, optional
@@ -223,7 +217,6 @@ class MeteoHist:
         self.year = year
         self.metric = metric
         self.reference_period = reference_period
-        self.save_file = save_file
         self.location = location
         self.ref_nans = 0
         self.coords = coords
@@ -259,6 +252,7 @@ class MeteoHist:
                 "bandwidth": 0.1,
                 "polynomial": 1,
             },
+            "save_file": True,
         }
 
         if isinstance(settings, dict):
@@ -737,7 +731,7 @@ class MeteoHist:
             top=0.85,
         )
 
-        if self.save_file:
+        if self.settings["save_file"]:
             file_path = self.save_plot_to_file(fig)
 
         # Remove old files
