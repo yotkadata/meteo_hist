@@ -223,7 +223,6 @@ class MeteoHist:
         self.year = year
         self.metric = metric
         self.reference_period = reference_period
-        self.highlight_max = highlight_max
         self.save_file = save_file
         self.location = location
         self.ref_nans = 0
@@ -252,6 +251,7 @@ class MeteoHist:
                 "output": "output",
             },
             "num_files_to_keep": 100,
+            "highlight_max": 1,
             "max_annotation": 0,
             "peak_alpha": False,
             "smooth": {
@@ -583,7 +583,7 @@ class MeteoHist:
         # By default, sort by difference between year's value and mean
         df_max = (
             self.df_t.sort_values(f"{self.year}_diff", ascending=False)
-            .loc[: self.highlight_max]
+            .loc[: self.settings["highlight_max"]]
             .copy()
         )
 
@@ -594,11 +594,11 @@ class MeteoHist:
 
             df_max = (
                 df_max.sort_values(f"{self.year}_diffp95", ascending=False)
-                .loc[: self.highlight_max]
+                .loc[: self.settings["highlight_max"]]
                 .copy()
             )
 
-        for i in range(self.highlight_max):
+        for i in range(self.settings["highlight_max"]):
             axes.scatter(
                 df_max.index[i],
                 df_max[f"{self.year}_above"].values[i],
@@ -710,7 +710,7 @@ class MeteoHist:
         self.plot_diff(axes, cmap=self.settings["colors"]["cmap_below"], method="below")
 
         # Annotate maximum values
-        if self.highlight_max > 0:
+        if self.settings["highlight_max"] > 0:
             self.annotate_max_values(axes)
 
         # Prepare axes removing borders and getting y-axis limits

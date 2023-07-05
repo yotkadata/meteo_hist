@@ -126,7 +126,7 @@ def build_form(method: str = "by_name") -> dict:
                 )
 
         # Number of peaks to annotate
-        form_values["peaks"] = st.slider(
+        form_values["highlight_max"] = st.slider(
             "Peaks to be annotated:",
             min_value=0,
             max_value=5,
@@ -309,7 +309,6 @@ def create_graph(data: pd.DataFrame, inputs: dict) -> plt.Figure:
             inputs["year"],
             metric=inputs["metric"],
             reference_period=inputs["ref_period"],
-            highlight_max=inputs["peaks"],
             location=inputs["location_name"],
             coords=(inputs["lat"], inputs["lon"]),
             settings=inputs,
