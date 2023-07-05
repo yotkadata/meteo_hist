@@ -490,7 +490,7 @@ class MeteoHist:
 
         # Add annotation for area between p05 and p95
         axes.annotate(
-            "90% of recorded temperatures\nfall within the gray area",
+            "90% of temperatures in reference\nperiod fall within the gray area",
             # Position arrow in October
             xy=(366 / 12 * 10, arrow_point),
             # Position text on the bottom
