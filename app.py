@@ -191,7 +191,7 @@ def build_form(method: str = "by_name") -> dict:
             # Checkbox to decide if peaks should be emphasized
             form_values["peak_alpha"] = st.checkbox(
                 "Emphasize peaks",
-                value=False,
+                value=True,
                 help="""
                     If checked, peaks that leave the gray area between the 5 and 95 
                     percentile will be highlighted more.

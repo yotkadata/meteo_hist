@@ -238,7 +238,7 @@ class MeteoHist:
             "num_files_to_keep": 100,
             "highlight_max": 1,
             "max_annotation": 0,
-            "peak_alpha": False,
+            "peak_alpha": True,
             "smooth": {
                 "apply": True,
                 "bandwidth": 0.1,
