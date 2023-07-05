@@ -310,7 +310,6 @@ def create_graph(data: pd.DataFrame, inputs: dict) -> plt.Figure:
             metric=inputs["metric"],
             reference_period=inputs["ref_period"],
             location=inputs["location_name"],
-            coords=(inputs["lat"], inputs["lon"]),
             settings=inputs,
         )
         figure, file_path, ref_nans = plot.create_plot()

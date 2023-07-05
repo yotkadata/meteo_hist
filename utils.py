@@ -191,7 +191,6 @@ class MeteoHist:
         metric: dict,
         reference_period: tuple = (1961, 1990),
         location: str = None,
-        coords: tuple = None,
         settings: dict = None,
     ):
         """
@@ -207,8 +206,6 @@ class MeteoHist:
             Reference period to compare the data, by default (1991, 2020).
         location : str, optional
             Location name, by default None.
-        coords : tuple, optional
-            Coordinates of the location, by default None.
         settings : dict, optional
             Settings dictionary, by default None.
         """
@@ -219,7 +216,6 @@ class MeteoHist:
         self.reference_period = reference_period
         self.location = location
         self.ref_nans = 0
-        self.coords = coords
 
     def update_settings(self, settings: dict) -> None:
         """
@@ -253,6 +249,8 @@ class MeteoHist:
                 "polynomial": 1,
             },
             "save_file": True,
+            "lat": None,
+            "lon": None,
         }
 
         if isinstance(settings, dict):
@@ -522,13 +520,13 @@ class MeteoHist:
         """
         Add coordinates to the plot.
         """
-        if self.coords is None:
+        if self.settings["lat"] is None or self.settings["lon"] is None:
             return
 
         fig.text(
             0,
             0,
-            f"lat: {self.coords[0]}, lon: {self.coords[1]}",
+            f"lat: {self.settings['lat']}, lon: {self.settings['lon']}",
             ha="left",
             va="bottom",
             fontsize=8,
