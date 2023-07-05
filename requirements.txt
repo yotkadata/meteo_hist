@@ -1,4 +1,6 @@
+extra_streamlit_components==0.1.56
 folium==0.14.0
+lowess==1.0.3
 matplotlib==3.7.1
 numpy==1.23.5
 pandas==2.0.2
