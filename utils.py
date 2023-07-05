@@ -189,7 +189,6 @@ class MeteoHist:
         df_t: pd.DataFrame,
         year: int,
         reference_period: tuple = (1961, 1990),
-        location: str = None,
         settings: dict = None,
     ):
         """
@@ -201,8 +200,6 @@ class MeteoHist:
             Year to plot.
         reference_period : tuple of ints
             Reference period to compare the data, by default (1991, 2020).
-        location : str, optional
-            Location name, by default None.
         settings : dict, optional
             Settings dictionary, by default None.
         """
@@ -210,7 +207,6 @@ class MeteoHist:
         self.df_t = self.transform_df(df_t, year, reference_period)
         self.year = year
         self.reference_period = reference_period
-        self.location = location
         self.ref_nans = 0
 
     def update_settings(self, settings: dict) -> None:
@@ -247,6 +243,7 @@ class MeteoHist:
             "save_file": True,
             "lat": None,
             "lon": None,
+            "location_name": None,
             "metric": {
                 "name": "temperature_2m_mean",
                 "title": "Mean temperatures",
@@ -408,7 +405,11 @@ class MeteoHist:
         Add heading to the plot.
         """
         # Define display of location in title
-        loc = f"in {self.location} " if self.location else ""
+        loc = (
+            f"in {self.settings['location_name']} "
+            if self.settings["location_name"]
+            else ""
+        )
 
         # Add title and subtitle
         plt.suptitle(
@@ -648,7 +649,7 @@ class MeteoHist:
         Path(self.settings["paths"]["output"]).mkdir(parents=True, exist_ok=True)
 
         file_name = (
-            f"{self.location}-{self.settings['metric']['title']}-{self.year}_"
+            f"{self.settings['location_name']}-{self.settings['metric']['title']}-{self.year}_"
             f"ref-{self.reference_period[0]}-{self.reference_period[1]}.png"
         )
 
