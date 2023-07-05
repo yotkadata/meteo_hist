@@ -292,7 +292,7 @@ class MeteoHist:
         )
 
         if self.settings["smooth"]["apply"]:
-            # Add smooting using LOESS
+            # Add smooting using LOWESS (locally weighted scatterplot smoothing)
             for col in ["p05", "mean", "p95"]:
                 df_g[col] = lowess.lowess(
                     df_g["dayofyear"],
