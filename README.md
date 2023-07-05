@@ -12,6 +12,8 @@ The **peaks** on the graph show how the displayed year's temperatures deviate fr
 
 The plot is created using Python's **Matplotlib** library.
 
+By default, mean values of the reference period are **smoothed** using Locally Weighted Scatterplot Smoothing (LOWESS). The value can be adjusted under "advanced settings" in the app.
+
 ### Data
 
 To create the graph, temperature data from the open-source weather API [**Open-Meteo**](https://open-meteo.com/en/docs/historical-weather-api) is used. According to them, "the Historical Weather API is based on **reanalysis datasets** and uses a **combination of weather station, aircraft, buoy, radar, and satellite observations** to create a comprehensive record of past weather conditions. These datasets are able to **fill in gaps by using mathematical models** to estimate the values of various weather variables. As a result, reanalysis datasets are able to provide detailed historical weather information for **locations that may not have had weather stations nearby**, such as rural areas or the open ocean."
