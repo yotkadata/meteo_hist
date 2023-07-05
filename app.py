@@ -272,21 +272,21 @@ def download_data(inputs: dict) -> pd.DataFrame():
     if not isinstance(inputs, dict):
         return None
 
+    url = (
+        f"https://www.openstreetmap.org/"
+        f"?mlat={inputs['lat']}&mlon={inputs['lon']}"
+        f"#map=6/{inputs['lat']}/{inputs['lon']}&layers=H"
+    )
+
+    st.markdown(
+        f"""<div style="text-align: right;">
+            Using location: <strong>{inputs["location_name"]}</strong>
+            (<a href="{url}">lat: {inputs["lat"]}, lon: {inputs["lon"]}</a>).
+            </div>""",
+        unsafe_allow_html=True,
+    )
+
     with st.spinner("Downloading data..."):
-        url = (
-            f"https://www.openstreetmap.org/"
-            f"?mlat={inputs['lat']}&mlon={inputs['lon']}"
-            f"#map=6/{inputs['lat']}/{inputs['lon']}&layers=H"
-        )
-
-        st.markdown(
-            f"""<div style="text-align: right;">
-                Using location: <strong>{inputs["location_name"]}</strong>
-                (<a href="{url}">lat: {inputs["lat"]}, lon: {inputs["lon"]}</a>).
-                </div>""",
-            unsafe_allow_html=True,
-        )
-
         # Download the data
         data = utils.get_data(
             inputs["lat"],

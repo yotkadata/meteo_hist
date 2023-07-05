@@ -40,7 +40,7 @@ def calc_dates(ref_period: tuple[int, int], year: int) -> tuple[str, str]:
     return date_start, date_end
 
 
-@st.cache_data
+@st.cache_data(show_spinner=False)
 def get_data(
     lat: float,
     lon: float,
@@ -81,7 +81,7 @@ def get_data(
     return df_t
 
 
-@st.cache_data
+@st.cache_data(show_spinner=False)
 def get_lat_lon(query: str, lang: str = "en") -> dict:
     """
     Get latitude and longitude from a query string.
@@ -120,7 +120,7 @@ def get_lat_lon(query: str, lang: str = "en") -> dict:
     return result
 
 
-@st.cache_data
+@st.cache_data(show_spinner=False)
 def get_location(coords: tuple[float, float], lang: str = "en") -> str:
     """
     Get location name from latitude and longitude.
