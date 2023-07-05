@@ -307,7 +307,6 @@ def create_graph(data: pd.DataFrame, inputs: dict) -> plt.Figure:
         plot = utils.MeteoHist(
             data,
             inputs["year"],
-            metric=inputs["metric"],
             reference_period=inputs["ref_period"],
             location=inputs["location_name"],
             settings=inputs,

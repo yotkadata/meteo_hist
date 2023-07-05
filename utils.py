@@ -188,7 +188,6 @@ class MeteoHist:
         self,
         df_t: pd.DataFrame,
         year: int,
-        metric: dict,
         reference_period: tuple = (1961, 1990),
         location: str = None,
         settings: dict = None,
@@ -200,8 +199,6 @@ class MeteoHist:
             Dataframe with metric data.
         year : int
             Year to plot.
-        metric : dict
-            Metric to plot.
         reference_period : tuple of ints
             Reference period to compare the data, by default (1991, 2020).
         location : str, optional
@@ -212,7 +209,6 @@ class MeteoHist:
         self.settings = self.update_settings(settings)
         self.df_t = self.transform_df(df_t, year, reference_period)
         self.year = year
-        self.metric = metric
         self.reference_period = reference_period
         self.location = location
         self.ref_nans = 0
@@ -251,6 +247,12 @@ class MeteoHist:
             "save_file": True,
             "lat": None,
             "lon": None,
+            "metric": {
+                "name": "temperature_2m_mean",
+                "title": "Mean temperatures",
+                "subtitle": "Compared to historical daily mean temperatures",
+                "description": "Mean Temperature",
+            },
         }
 
         if isinstance(settings, dict):
@@ -410,14 +412,14 @@ class MeteoHist:
 
         # Add title and subtitle
         plt.suptitle(
-            f"{self.metric['title']} {loc}{self.year}",
+            f"{self.settings['metric']['title']} {loc}{self.year}",
             fontsize=24,
             fontweight="bold",
             x=1,
             ha="right",
         )
         plt.title(
-            f"{self.metric['subtitle']} ({self.reference_period[0]}-{self.reference_period[1]})",
+            f"{self.settings['metric']['subtitle']} ({self.reference_period[0]}-{self.reference_period[1]})",
             fontsize=14,
             fontweight="normal",
             x=1,
@@ -468,7 +470,7 @@ class MeteoHist:
 
         # Add annotation for mean line, with arrow pointing to the line
         axes.annotate(
-            f"{self.metric['description']}\n{self.reference_period[0]}-{self.reference_period[1]}",
+            f"{self.settings['metric']['description']}\n{self.reference_period[0]}-{self.reference_period[1]}",
             # Position arrow to the left of the annotation
             xy=(366 / 3.5 - 30, self.df_t["mean"].iloc[int(366 / 3.5 - 30)]),
             # Position text in ~April / between p05 line and minimum
@@ -646,7 +648,7 @@ class MeteoHist:
         Path(self.settings["paths"]["output"]).mkdir(parents=True, exist_ok=True)
 
         file_name = (
-            f"{self.location}-{self.metric['title']}-{self.year}_"
+            f"{self.location}-{self.settings['metric']['title']}-{self.year}_"
             f"ref-{self.reference_period[0]}-{self.reference_period[1]}.png"
         )
 
@@ -686,7 +688,7 @@ class MeteoHist:
             self.df_t.index,
             self.df_t["mean"],
             label=(
-                f"{self.metric['description']} "
+                f"{self.settings['metric']['description']} "
                 f"{self.reference_period[0]}-{self.reference_period[1]}"
             ),
             color="black",
