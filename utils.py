@@ -235,6 +235,7 @@ class MeteoHist:
             "highlight_max": 1,
             "max_annotation": 0,
             "peak_alpha": True,
+            "peak_method": "mean",
             "smooth": {
                 "apply": True,
                 "bandwidth": 0.1,
@@ -249,6 +250,7 @@ class MeteoHist:
                 "title": "Mean temperatures",
                 "subtitle": "Compared to historical daily mean temperatures",
                 "description": "Mean Temperature",
+                "unit": "°C",
             },
         }
 
@@ -275,8 +277,15 @@ class MeteoHist:
         """
         df_f = df_t.copy()
 
-        # Add column with day of year
+        # Add columns with day of year and year
         df_f["dayofyear"] = df_f["date"].dt.dayofyear
+        df_f["year"] = df_f["date"].dt.year
+
+        # For precipitation, change values to cumulated sum for each year
+        if self.settings["metric"]["name"] == "precipitation_sum":
+            df_f["value"] = df_f.groupby(["year"])["value"].cumsum()
+            # Remove day 366 because it causes inconsistencies
+            df_f = df_f[df_f["dayofyear"] != 366].copy()
 
         # Filter dataframe to reference period
         df_g = df_f[df_f["date"].dt.year.between(*ref_period)].copy()
@@ -467,37 +476,84 @@ class MeteoHist:
         """
         Add annotations to the plot to explain the data.
         """
-        minimum, _ = self.get_y_limits()
+        minimum, maximum = self.get_y_limits()
+
+        if self.settings["metric"]["name"] == "precipitation_sum":
+            # Position arrow in ~March
+            arrow_xy = (366 / 3.5 - 30, self.df_t["mean"].iloc[int(366 / 3.5 - 30)])
+
+            # Position text in ~February / between max and total max
+            text_xy = (
+                366 / 12 * 2,
+                (self.df_t["p95"].iloc[int(366 / 24)] + maximum) / 2,
+            )
+            text_ha = "right"
+            text_va = "center"
+        else:
+            # Position arrow to the left of the annotation
+            arrow_xy = (366 / 3.5 - 30, self.df_t["mean"].iloc[int(366 / 3.5 - 30)])
+
+            # Position text in ~April / between p05 line and minimum
+            text_xy = (366 / 3.5, (self.df_t["p05"].iloc[int(366 / 3.5)] + minimum) / 2)
+            text_ha = "center"
+            text_va = "center"
 
         # Add annotation for mean line, with arrow pointing to the line
         axes.annotate(
-            f"{self.settings['metric']['description']}\n{self.reference_period[0]}-{self.reference_period[1]}",
-            # Position arrow to the left of the annotation
-            xy=(366 / 3.5 - 30, self.df_t["mean"].iloc[int(366 / 3.5 - 30)]),
-            # Position text in ~April / between p05 line and minimum
-            xytext=(366 / 3.5, (self.df_t["p05"].iloc[int(366 / 3.5)] + minimum) / 2),
+            (
+                f"{self.settings['metric']['description']}\n"
+                f"{self.reference_period[0]}-{self.reference_period[1]}"
+            ),
+            xy=arrow_xy,
+            xytext=text_xy,
             arrowprops={"arrowstyle": "-", "facecolor": "black", "edgecolor": "black"},
-            horizontalalignment="center",
-            verticalalignment="center",
+            horizontalalignment=text_ha,
+            verticalalignment=text_va,
             color="black",
         )
 
-        # Get value in the middle between p05 and mean
-        arrow_point = (
-            self.df_t["p05"].iloc[int(366 / 12 * 10)]
-            + self.df_t["mean"].iloc[int(366 / 12 * 10)]
-        ) / 2
+        if self.settings["metric"]["name"] == "precipitation_sum":
+            # Position arrow in September, in the middle between p05 and 0
+            arrow_xy = (
+                366 / 12 * 9,
+                (
+                    self.df_t["p05"].iloc[int(366 / 12 * 9)]
+                    + self.df_t["mean"].iloc[int(366 / 12 * 9)]
+                )
+                / 2,
+            )
+
+            # Position text on the bottom
+            text_xy = (
+                366 / 12 * 11,
+                (self.df_t["p05"].iloc[int(366 / 12 * 9)] + minimum) / 2,
+            )
+            text_ha = "center"
+            text_va = "center"
+        else:
+            # Position arrow in October, in the middle between p05 and mean
+            arrow_xy = (
+                366 / 12 * 10,
+                (
+                    self.df_t["p05"].iloc[int(366 / 12 * 10)]
+                    + self.df_t["mean"].iloc[int(366 / 12 * 10)]
+                )
+                / 2,
+            )
+
+            # Position text on the bottom
+            text_xy = (366 / 12 * 9, minimum)
+            text_ha = "center"
+            text_va = "bottom"
 
         # Add annotation for area between p05 and p95
         axes.annotate(
-            "90% of temperatures in reference\nperiod fall within the gray area",
-            # Position arrow in October
-            xy=(366 / 12 * 10, arrow_point),
-            # Position text on the bottom
-            xytext=(366 / 12 * 9, minimum),
+            "90% of reference period\nvalues fall within the gray area",
+            xy=arrow_xy,
+            xytext=text_xy,
             arrowprops={"arrowstyle": "-", "facecolor": "black", "edgecolor": "black"},
-            horizontalalignment="center",
-            verticalalignment="bottom",
+            horizontalalignment=text_ha,
+            verticalalignment=text_va,
             color="black",
         )
 
@@ -604,7 +660,7 @@ class MeteoHist:
                 zorder=3,
             )
             axes.annotate(
-                f"+{df_max[f'{self.year}_diff'].values[i]:.1f}°C",
+                f"+{df_max[f'{self.year}_diff'].values[i]:.1f}{self.settings['metric']['unit']}",
                 xy=(
                     df_max.index[i],
                     df_max[f"{self.year}_above"].values[i],

@@ -144,18 +144,28 @@ def build_form(method: str = "by_name") -> dict:
                     "title": "Mean temperatures",
                     "subtitle": "Compared to historical daily mean temperatures",
                     "description": "Mean Temperature",
+                    "unit": "°C",
                 },
                 "Minimum temperature": {
                     "name": "temperature_2m_min",
                     "title": "Minimum temperatures",
                     "subtitle": "Compared to average of historical daily minimum temperatures",
                     "description": "Average of minimum temperatures",
+                    "unit": "°C",
                 },
                 "Maximum temperature": {
                     "name": "temperature_2m_max",
                     "title": "Maximum temperatures",
                     "subtitle": "Compared to average of historical daily maximum temperatures",
                     "description": "Average of maximum temperatures",
+                    "unit": "°C",
+                },
+                "Precipitation": {
+                    "name": "precipitation_sum",
+                    "title": "Cumulated Precipitation",
+                    "subtitle": "Compared to historical values",
+                    "description": "Cumulated Precipitation",
+                    "unit": "mm",
                 },
             }
             selected_metric = st.selectbox("Metric:", list(metrics.keys()))
@@ -265,6 +275,14 @@ def process_form(form_values: dict) -> dict:
             "polynomial": degrees[form_values["smooth"]],
             "bandwidth": 0.1,
         }
+
+    if form_values["metric"]["name"] == "precipitation_sum":
+        form_values["colors"] = {
+            "cmap_above": "Greens",
+            "cmap_below": "YlOrRd_r",
+            "fill_percentiles": "#f8f8f8",
+        }
+        form_values["yaxis_label"] = "Precipitation (mm)"
 
     return form_values
 
