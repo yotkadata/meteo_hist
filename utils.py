@@ -278,6 +278,9 @@ class MeteoHist:
         # Add column with day of year
         df_f["dayofyear"] = df_f["date"].dt.dayofyear
 
+        # Remove day 366 because it causes inconsistencies
+        df_f = df_f[df_f["dayofyear"] != 366].copy()
+
         # Get last available date and save it
         self.last_date = (
             df_f.dropna(subset=["value"], how="all")["date"]
