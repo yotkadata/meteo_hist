@@ -199,6 +199,15 @@ def build_form(method: str = "by_name") -> dict:
                     """,
             )
 
+            # Checkbox to decide if months should have alternating background
+            form_values["alternate_months"] = st.checkbox(
+                "Alternate months",
+                value=True,
+                help="""
+                    If checked, the background color of months is alternated.
+                    """,
+            )
+
         # Create button to start the analysis
         form_values["create_graph"] = st.form_submit_button("Create")
 
@@ -265,6 +274,15 @@ def process_form(form_values: dict) -> dict:
             "polynomial": degrees[form_values["smooth"]],
             "bandwidth": 0.1,
         }
+
+    # Setting for alternating background colors for months
+    form_values["alternate_months"] = {
+        "apply": form_values["alternate_months"],
+        "odd_color": "#fff",
+        "odd_alpha": 0,
+        "even_color": "#f8f8f8",
+        "even_alpha": 0.3,
+    }
 
     return form_values
 

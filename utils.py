@@ -250,6 +250,13 @@ class MeteoHist:
                 "subtitle": "Compared to historical daily mean temperatures",
                 "description": "Mean Temperature",
             },
+            "alternate_months": {
+                "apply": True,
+                "odd_color": "#fff",
+                "odd_alpha": 0,
+                "even_color": "#f8f8f8",
+                "even_alpha": 0.3,
+            },
         }
 
         if isinstance(settings, dict):
@@ -421,6 +428,46 @@ class MeteoHist:
             tick.tick2line.set_markersize(0)
             tick.label1.set_horizontalalignment("center")
 
+    def alternate_months(self, axes):
+        """
+        Add alternating background color for months.
+        """
+
+        # Define dict with first and last day of each month
+        months_with_days = {
+            1: (1, 31),
+            2: (32, 59),
+            3: (60, 90),
+            4: (91, 120),
+            5: (121, 151),
+            6: (152, 181),
+            7: (182, 212),
+            8: (213, 243),
+            9: (244, 273),
+            10: (274, 304),
+            11: (305, 334),
+            12: (335, 365),
+        }
+
+        # Add background color
+        for month, days in months_with_days.items():
+            if (month % 2) != 0:
+                axes.axvspan(
+                    days[0],
+                    days[1],
+                    facecolor=self.settings["alternate_months"]["odd_color"],
+                    edgecolor=None,
+                    alpha=self.settings["alternate_months"]["odd_alpha"],
+                )
+            else:
+                axes.axvspan(
+                    days[0],
+                    days[1],
+                    facecolor=self.settings["alternate_months"]["even_color"],
+                    edgecolor=None,
+                    alpha=self.settings["alternate_months"]["even_alpha"],
+                )
+
     def add_heading(self):
         """
         Add heading to the plot.
@@ -473,6 +520,7 @@ class MeteoHist:
                 color="black",
                 linestyle="dashed",
                 linewidth=0.5,
+                zorder=9,
             )
             # Place a label on the line
             axes.text(
@@ -596,6 +644,7 @@ class MeteoHist:
                 color=colors[i],
                 alpha=alpha,
                 edgecolor="none",
+                zorder=8,
             )
 
     def annotate_max_values(self, axes):
@@ -720,6 +769,7 @@ class MeteoHist:
                 f"{self.reference_period[0]}-{self.reference_period[1]}"
             ),
             color="black",
+            zorder=10,
         )
 
         # Plot percentile lines
@@ -737,6 +787,10 @@ class MeteoHist:
 
         # Prepare axes removing borders and getting y-axis limits
         self.prepare_axes(axes)
+
+        # Add alternating background color for months
+        if self.settings["alternate_months"]["apply"]:
+            self.alternate_months(axes)
 
         # Add annotations
         self.add_annotations(axes)
