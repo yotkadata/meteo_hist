@@ -285,7 +285,7 @@ def download_data(inputs: dict) -> pd.DataFrame():
     st.markdown(
         f"""<div style="text-align: right;">
             Using location: <strong>{inputs["location_name"]}</strong>
-            (<a href="{url}">lat: {inputs["lat"]}, lon: {inputs["lon"]}</a>).
+            (<a href="{url}">lat: {inputs["lat"]}, lon: {inputs["lon"]}</a>)
             </div>""",
         unsafe_allow_html=True,
     )
@@ -298,6 +298,20 @@ def download_data(inputs: dict) -> pd.DataFrame():
             year=inputs["year"],
             reference_period=inputs["ref_period"],
             metric=inputs["metric"]["name"],
+        )
+
+        # Get last available date and save it
+        last_date = (
+            data.dropna(subset=["value"], how="all")["date"]
+            .iloc[-1]
+            .strftime("%d %b %Y")
+        )
+
+        st.markdown(
+            f"""<div style="text-align: right;">
+                Last available date: <strong>{last_date}</strong>
+                </div>""",
+            unsafe_allow_html=True,
         )
 
         return data

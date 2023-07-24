@@ -278,6 +278,13 @@ class MeteoHist:
         # Add column with day of year
         df_f["dayofyear"] = df_f["date"].dt.dayofyear
 
+        # Get last available date and save it
+        self.last_date = (
+            df_f.dropna(subset=["value"], how="all")["date"]
+            .iloc[-1]
+            .strftime("%d %b %Y")
+        )
+
         # Filter dataframe to reference period
         df_g = df_f[df_f["date"].dt.year.between(*ref_period)].copy()
 
@@ -519,17 +526,23 @@ class MeteoHist:
             alpha=0.5,
         )
 
-    def add_coordinates(self, fig):
+    def add_data_info(self, fig):
         """
-        Add coordinates to the plot.
+        Add coordinates and last avalable date to the plot.
         """
         if self.settings["lat"] is None or self.settings["lon"] is None:
             return
 
+        last_date_text = (
+            f" (last date included: {self.last_date})"
+            if self.year == dt.datetime.now().year
+            else ""
+        )
+
         fig.text(
             0,
             0,
-            f"lat: {self.settings['lat']}, lon: {self.settings['lon']}",
+            f"lat: {self.settings['lat']}, lon: {self.settings['lon']}{last_date_text}",
             ha="left",
             va="bottom",
             fontsize=8,
@@ -723,7 +736,7 @@ class MeteoHist:
         self.add_data_source(fig)
 
         # Add coordinates
-        self.add_coordinates(fig)
+        self.add_data_info(fig)
 
         # Adjust the margin
         fig.subplots_adjust(
