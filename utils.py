@@ -278,6 +278,20 @@ class MeteoHist:
         # Add column with day of year
         df_f["dayofyear"] = df_f["date"].dt.dayofyear
 
+        # Remove all Feb 29 rows to get rid of leap days
+        df_f = df_f[
+            ~((df_f["date"].dt.month == 2) & (df_f["date"].dt.day == 29))
+        ].copy()
+
+        # Adjust "dayofyear" values for days after February 29th in leap years
+        df_f["dayofyear"] = df_f["dayofyear"].where(
+            ~((df_f["date"].dt.month > 2) & (df_f["date"].dt.is_leap_year)),
+            df_f["dayofyear"] - 1,
+        )
+
+        # Reset index
+        df_f.reset_index(drop=True, inplace=True)
+
         # Get last available date and save it
         self.last_date = (
             df_f.dropna(subset=["value"], how="all")["date"]
