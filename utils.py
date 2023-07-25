@@ -17,6 +17,7 @@ import requests
 import seaborn as sns
 import streamlit as st
 from matplotlib import ticker
+from pydantic.v1.utils import deep_update
 from unidecode import unidecode
 
 
@@ -48,6 +49,7 @@ def get_data(
     reference_period: str = "1991-2020",
     timezone: str = "Europe/Berlin",
     metric="temperature_2m_mean",
+    units="metric",
 ) -> pd.DataFrame:
     """
     Get data from the API and return a DataFrame with the data.
@@ -63,6 +65,16 @@ def get_data(
         f"start_date={start_date}&end_date={end_date}&"
         f"daily={metric}&timezone={timezone}"
     )
+
+    # Set unit to be used
+    unit_temperature = "fahrenheit" if units == "imperial" else "celsius"
+    unit_precipitation = "inch" if units == "imperial" else "mm"
+
+    # Add unit to URL
+    if "temperature" in metric:
+        url = url + f"&temperature_unit={unit_temperature}"
+    if "precipitation" in metric:
+        url = url + f"&precipitation_unit={unit_precipitation}"
 
     # Get the data from the API
     data = requests.get(url, timeout=30)
@@ -222,7 +234,6 @@ class MeteoHist:
                 "xtick.labelsize": 11,
                 "ytick.labelsize": 11,
             },
-            "yaxis_label": "Temperature (°C)",
             "colors": {
                 "fill_percentiles": "#f8f8f8",
                 "cmap_above": "YlOrRd",
@@ -251,13 +262,25 @@ class MeteoHist:
                 "subtitle": "Compared to historical daily mean temperatures",
                 "description": "Mean Temperature",
                 "unit": "°C",
+                "yaxis_label": "Temperature",
+            },
+            "alternate_months": {
+                "apply": True,
+                "odd_color": "#fff",
+                "odd_alpha": 0,
+                "even_color": "#f8f8f8",
+                "even_alpha": 0.3,
             },
         }
 
-        if isinstance(settings, dict):
-            default_settings.update(settings)
+        # Update default settings if a settings dict was provided
+        settings = (
+            deep_update(default_settings, settings)
+            if isinstance(settings, dict)
+            else default_settings
+        )
 
-        return default_settings
+        return settings
 
     def p05(self, series: pd.Series) -> float:
         """
@@ -286,6 +309,27 @@ class MeteoHist:
             df_f["value"] = df_f.groupby(["year"])["value"].cumsum()
             # Remove day 366 because it causes inconsistencies
             df_f = df_f[df_f["dayofyear"] != 366].copy()
+
+        # Remove all Feb 29 rows to get rid of leap days
+        df_f = df_f[
+            ~((df_f["date"].dt.month == 2) & (df_f["date"].dt.day == 29))
+        ].copy()
+
+        # Adjust "dayofyear" values for days after February 29th in leap years
+        df_f["dayofyear"] = df_f["dayofyear"].where(
+            ~((df_f["date"].dt.month > 2) & (df_f["date"].dt.is_leap_year)),
+            df_f["dayofyear"] - 1,
+        )
+
+        # Reset index
+        df_f.reset_index(drop=True, inplace=True)
+
+        # Get last available date and save it
+        self.last_date = (
+            df_f.dropna(subset=["value"], how="all")["date"]
+            .iloc[-1]
+            .strftime("%d %b %Y")
+        )
 
         # Filter dataframe to reference period
         df_g = df_f[df_f["date"].dt.year.between(*ref_period)].copy()
@@ -386,7 +430,9 @@ class MeteoHist:
         axes.spines["left"].set_visible(False)
 
         # Add y-axis label
-        axes.set_ylabel(self.settings["yaxis_label"])
+        axes.set_ylabel(
+            f"{self.settings['metric']['yaxis_label']} ({self.settings['metric']['unit']})"
+        )
 
         # Add horizontal grid lines to the plot
         axes.grid(axis="y", color="0.9", linestyle="-", linewidth=1)
@@ -409,6 +455,46 @@ class MeteoHist:
             tick.tick2line.set_markersize(0)
             tick.label1.set_horizontalalignment("center")
 
+    def alternate_months(self, axes):
+        """
+        Add alternating background color for months.
+        """
+
+        # Define dict with first and last day of each month
+        months_with_days = {
+            1: (1, 31),
+            2: (32, 59),
+            3: (60, 90),
+            4: (91, 120),
+            5: (121, 151),
+            6: (152, 181),
+            7: (182, 212),
+            8: (213, 243),
+            9: (244, 273),
+            10: (274, 304),
+            11: (305, 334),
+            12: (335, 365),
+        }
+
+        # Add background color
+        for month, days in months_with_days.items():
+            if (month % 2) != 0:
+                axes.axvspan(
+                    days[0],
+                    days[1],
+                    facecolor=self.settings["alternate_months"]["odd_color"],
+                    edgecolor=None,
+                    alpha=self.settings["alternate_months"]["odd_alpha"],
+                )
+            else:
+                axes.axvspan(
+                    days[0],
+                    days[1],
+                    facecolor=self.settings["alternate_months"]["even_color"],
+                    edgecolor=None,
+                    alpha=self.settings["alternate_months"]["even_alpha"],
+                )
+
     def add_heading(self):
         """
         Add heading to the plot.
@@ -429,7 +515,10 @@ class MeteoHist:
             ha="right",
         )
         plt.title(
-            f"{self.settings['metric']['subtitle']} ({self.reference_period[0]}-{self.reference_period[1]})",
+            (
+                f"{self.settings['metric']['subtitle']} "
+                f"({self.reference_period[0]}-{self.reference_period[1]})"
+            ),
             fontsize=14,
             fontweight="normal",
             x=1,
@@ -461,6 +550,7 @@ class MeteoHist:
                 color="black",
                 linestyle="dashed",
                 linewidth=0.5,
+                zorder=9,
             )
             # Place a label on the line
             axes.text(
@@ -480,21 +570,30 @@ class MeteoHist:
 
         if self.settings["metric"]["name"] == "precipitation_sum":
             # Position arrow in ~March
-            arrow_xy = (366 / 3.5 - 30, self.df_t["mean"].iloc[int(366 / 3.5 - 30)])
+            arrow_xy = (
+                int(365 / 3.5 - 30),
+                self.df_t["mean"].iloc[int(365 / 3.5 - 30)],
+            )
 
             # Position text in ~February / between max and total max
             text_xy = (
-                366 / 12 * 2,
-                (self.df_t["p95"].iloc[int(366 / 24)] + maximum) / 2,
+                int(365 / 12 * 2),
+                (self.df_t["p95"].iloc[int(365 / 24)] + maximum) / 2,
             )
             text_ha = "right"
             text_va = "center"
         else:
             # Position arrow to the left of the annotation
-            arrow_xy = (366 / 3.5 - 30, self.df_t["mean"].iloc[int(366 / 3.5 - 30)])
+            arrow_xy = (
+                int(365 / 3.5 - 30),
+                self.df_t["mean"].iloc[int(365 / 3.5 - 30)],
+            )
 
             # Position text in ~April / between p05 line and minimum
-            text_xy = (366 / 3.5, (self.df_t["p05"].iloc[int(366 / 3.5)] + minimum) / 2)
+            text_xy = (
+                int(365 / 3.5),
+                (self.df_t["p05"].iloc[int(365 / 3.5)] + minimum) / 2,
+            )
             text_ha = "center"
             text_va = "center"
 
@@ -506,43 +605,49 @@ class MeteoHist:
             ),
             xy=arrow_xy,
             xytext=text_xy,
-            arrowprops={"arrowstyle": "-", "facecolor": "black", "edgecolor": "black"},
+            arrowprops={
+                "arrowstyle": "-",
+                "facecolor": "black",
+                "edgecolor": "black",
+                "shrinkB": 0,  # Remove distance to mean line
+            },
             horizontalalignment=text_ha,
             verticalalignment=text_va,
             color="black",
+            zorder=10,
         )
 
         if self.settings["metric"]["name"] == "precipitation_sum":
             # Position arrow in September, in the middle between p05 and 0
             arrow_xy = (
-                366 / 12 * 9,
+                int(365 / 12 * 9),
                 (
-                    self.df_t["p05"].iloc[int(366 / 12 * 9)]
-                    + self.df_t["mean"].iloc[int(366 / 12 * 9)]
+                    self.df_t["p05"].iloc[int(365 / 12 * 9)]
+                    + self.df_t["mean"].iloc[int(365 / 12 * 9)]
                 )
                 / 2,
             )
 
-            # Position text on the bottom
+            # Position text (almost) on the bottom
             text_xy = (
-                366 / 12 * 11,
-                (self.df_t["p05"].iloc[int(366 / 12 * 9)] + minimum) / 2,
+                int(365 / 12 * 11),
+                (self.df_t["p05"].iloc[int(365 / 12 * 9)] + minimum * 1.02) / 2,
             )
             text_ha = "center"
             text_va = "center"
         else:
             # Position arrow in October, in the middle between p05 and mean
             arrow_xy = (
-                366 / 12 * 10,
+                int(365 / 12 * 10),
                 (
-                    self.df_t["p05"].iloc[int(366 / 12 * 10)]
-                    + self.df_t["mean"].iloc[int(366 / 12 * 10)]
+                    self.df_t["p05"].iloc[int(365 / 12 * 10)]
+                    + self.df_t["mean"].iloc[int(365 / 12 * 10)]
                 )
                 / 2,
             )
 
-            # Position text on the bottom
-            text_xy = (366 / 12 * 9, minimum)
+            # Position text (almost) on the bottom
+            text_xy = (int(365 / 12 * 9), minimum * 1.02)
             text_ha = "center"
             text_va = "bottom"
 
@@ -555,6 +660,7 @@ class MeteoHist:
             horizontalalignment=text_ha,
             verticalalignment=text_va,
             color="black",
+            zorder=10,
         )
 
     def add_data_source(self, fig):
@@ -575,17 +681,23 @@ class MeteoHist:
             alpha=0.5,
         )
 
-    def add_coordinates(self, fig):
+    def add_data_info(self, fig):
         """
-        Add coordinates to the plot.
+        Add coordinates and last avalable date to the plot.
         """
         if self.settings["lat"] is None or self.settings["lon"] is None:
             return
 
+        last_date_text = (
+            f" (last date included: {self.last_date})"
+            if self.year == dt.datetime.now().year
+            else ""
+        )
+
         fig.text(
             0,
             0,
-            f"lat: {self.settings['lat']}, lon: {self.settings['lon']}",
+            f"lat: {self.settings['lat']}, lon: {self.settings['lon']}{last_date_text}",
             ha="left",
             va="bottom",
             fontsize=8,
@@ -625,6 +737,7 @@ class MeteoHist:
                 color=colors[i],
                 alpha=alpha,
                 edgecolor="none",
+                zorder=8,
             )
 
     def annotate_max_values(self, axes):
@@ -665,10 +778,9 @@ class MeteoHist:
                     df_max.index[i],
                     df_max[f"{self.year}_above"].values[i],
                 ),
-                xytext=(
-                    df_max.index[i],
-                    df_max[f"{self.year}_above"].values[i] + 1,
-                ),
+                # Use offset for annotation text
+                xytext=(0, 10),
+                textcoords="offset points",
                 horizontalalignment="center",
                 verticalalignment="bottom",
             )
@@ -749,6 +861,7 @@ class MeteoHist:
                 f"{self.reference_period[0]}-{self.reference_period[1]}"
             ),
             color="black",
+            zorder=10,
         )
 
         # Plot percentile lines
@@ -767,6 +880,10 @@ class MeteoHist:
         # Prepare axes removing borders and getting y-axis limits
         self.prepare_axes(axes)
 
+        # Add alternating background color for months
+        if self.settings["alternate_months"]["apply"]:
+            self.alternate_months(axes)
+
         # Add annotations
         self.add_annotations(axes)
 
@@ -779,7 +896,7 @@ class MeteoHist:
         self.add_data_source(fig)
 
         # Add coordinates
-        self.add_coordinates(fig)
+        self.add_data_info(fig)
 
         # Adjust the margin
         fig.subplots_adjust(

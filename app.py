@@ -144,32 +144,36 @@ def build_form(method: str = "by_name") -> dict:
                     "title": "Mean temperatures",
                     "subtitle": "Compared to historical daily mean temperatures",
                     "description": "Mean Temperature",
-                    "unit": "°C",
                 },
                 "Minimum temperature": {
                     "name": "temperature_2m_min",
                     "title": "Minimum temperatures",
                     "subtitle": "Compared to average of historical daily minimum temperatures",
                     "description": "Average of minimum temperatures",
-                    "unit": "°C",
                 },
                 "Maximum temperature": {
                     "name": "temperature_2m_max",
                     "title": "Maximum temperatures",
                     "subtitle": "Compared to average of historical daily maximum temperatures",
                     "description": "Average of maximum temperatures",
-                    "unit": "°C",
                 },
                 "Precipitation": {
                     "name": "precipitation_sum",
                     "title": "Cumulated Precipitation",
                     "subtitle": "Compared to historical values",
                     "description": "Cumulated Precipitation",
-                    "unit": "mm",
                 },
             }
             selected_metric = st.selectbox("Metric:", list(metrics.keys()))
             form_values["metric"] = metrics[selected_metric]
+
+            # Selection for unit system
+            units = {
+                "Metric System (°C, mm)": "metric",
+                "Imperial System (°F, In)": "imperial",
+            }
+            selected_units = st.selectbox("Temperature units:", list(units.keys()))
+            form_values["units"] = units[selected_units]
 
             # Slider to apply LOWESS smoothing
             form_values["smooth"] = st.slider(
@@ -206,6 +210,15 @@ def build_form(method: str = "by_name") -> dict:
                 help="""
                     If checked, peaks that leave the gray area between the 5 and 95 
                     percentile will be highlighted more.
+                    """,
+            )
+
+            # Checkbox to decide if months should have alternating background
+            form_values["alternate_months"] = st.checkbox(
+                "Alternate months",
+                value=True,
+                help="""
+                    If checked, the background color of months is alternated.
                     """,
             )
 
@@ -273,16 +286,30 @@ def process_form(form_values: dict) -> dict:
             # Calculate polynomial degree based on smoothing value
             # 1->7, 2->1 (lower values mean more smoothing)
             "polynomial": degrees[form_values["smooth"]],
-            "bandwidth": 0.1,
         }
 
+    # Define units to be used
+    units = {
+        "metric": {"temperature": "°C", "precipitation": "mm"},
+        "imperial": {"temperature": "°F", "precipitation": "In"},
+    }
+
+    # Set unit for temperature graphs
+    if "temperature" in form_values["metric"]["name"]:
+        form_values["metric"]["unit"] = units[form_values["units"]]["temperature"]
+
+    # Set unit for precipitation graphs
     if form_values["metric"]["name"] == "precipitation_sum":
+        form_values["metric"]["unit"] = units[form_values["units"]]["precipitation"]
+        form_values["metric"]["yaxis_label"] = "Precipitation"
         form_values["colors"] = {
             "cmap_above": "Greens",
             "cmap_below": "YlOrRd_r",
             "fill_percentiles": "#f8f8f8",
         }
-        form_values["yaxis_label"] = "Precipitation (mm)"
+
+    # Setting for alternating background colors for months
+    form_values["alternate_months"] = {"apply": form_values["alternate_months"]}
 
     return form_values
 
@@ -303,7 +330,7 @@ def download_data(inputs: dict) -> pd.DataFrame():
     st.markdown(
         f"""<div style="text-align: right;">
             Using location: <strong>{inputs["location_name"]}</strong>
-            (<a href="{url}">lat: {inputs["lat"]}, lon: {inputs["lon"]}</a>).
+            (<a href="{url}">lat: {inputs["lat"]}, lon: {inputs["lon"]}</a>)
             </div>""",
         unsafe_allow_html=True,
     )
@@ -316,6 +343,21 @@ def download_data(inputs: dict) -> pd.DataFrame():
             year=inputs["year"],
             reference_period=inputs["ref_period"],
             metric=inputs["metric"]["name"],
+            units=inputs["units"],
+        )
+
+        # Get last available date and save it
+        last_date = (
+            data.dropna(subset=["value"], how="all")["date"]
+            .iloc[-1]
+            .strftime("%d %b %Y")
+        )
+
+        st.markdown(
+            f"""<div style="text-align: right;">
+                Last available date: <strong>{last_date}</strong>
+                </div>""",
+            unsafe_allow_html=True,
         )
 
         return data
