@@ -566,17 +566,17 @@ class MeteoHist:
 
         # Get value in the middle between p05 and mean
         arrow_point = (
-            self.df_t["p05"].iloc[int(366 / 12 * 10)]
-            + self.df_t["mean"].iloc[int(366 / 12 * 10)]
+            self.df_t["p05"].iloc[int(365 / 12 * 10)]
+            + self.df_t["mean"].iloc[int(365 / 12 * 10)]
         ) / 2
 
         # Add annotation for area between p05 and p95
         axes.annotate(
             "90% of temperatures in reference\nperiod fall within the gray area",
             # Position arrow in October
-            xy=(366 / 12 * 10, arrow_point),
-            # Position text on the bottom
-            xytext=(366 / 12 * 9, minimum),
+            xy=(int(365 / 12 * 10), arrow_point),
+            # Position text (almost) on the bottom
+            xytext=(int(365 / 12 * 9), minimum * 1.02),
             arrowprops={"arrowstyle": "-", "facecolor": "black", "edgecolor": "black"},
             horizontalalignment="center",
             verticalalignment="bottom",
@@ -699,10 +699,9 @@ class MeteoHist:
                     df_max.index[i],
                     df_max[f"{self.year}_above"].values[i],
                 ),
-                xytext=(
-                    df_max.index[i],
-                    df_max[f"{self.year}_above"].values[i] + 1,
-                ),
+                # Use offset for annotation text
+                xytext=(0, 10),
+                textcoords="offset points",
                 horizontalalignment="center",
                 verticalalignment="bottom",
             )
