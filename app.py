@@ -137,36 +137,37 @@ def build_form(method: str = "by_name") -> dict:
                 """,
         )
 
-        with st.expander("Advanced settings"):
-            metrics = {
-                "Mean temperature": {
-                    "name": "temperature_2m_mean",
-                    "title": "Mean temperatures",
-                    "subtitle": "Compared to historical daily mean temperatures",
-                    "description": "Mean Temperature",
-                },
-                "Minimum temperature": {
-                    "name": "temperature_2m_min",
-                    "title": "Minimum temperatures",
-                    "subtitle": "Compared to average of historical daily minimum temperatures",
-                    "description": "Average of minimum temperatures",
-                },
-                "Maximum temperature": {
-                    "name": "temperature_2m_max",
-                    "title": "Maximum temperatures",
-                    "subtitle": "Compared to average of historical daily maximum temperatures",
-                    "description": "Average of maximum temperatures",
-                },
-                "Precipitation": {
-                    "name": "precipitation_sum",
-                    "title": "Cumulated Precipitation",
-                    "subtitle": "Compared to historical values",
-                    "description": "Cumulated Precipitation",
-                },
-            }
-            selected_metric = st.selectbox("Metric:", list(metrics.keys()))
-            form_values["metric"] = metrics[selected_metric]
+        # Selector for metric
+        metrics = {
+            "Mean temperature": {
+                "name": "temperature_2m_mean",
+                "title": "Mean temperatures",
+                "subtitle": "Compared to historical daily mean temperatures",
+                "description": "Mean Temperature",
+            },
+            "Minimum temperature": {
+                "name": "temperature_2m_min",
+                "title": "Minimum temperatures",
+                "subtitle": "Compared to average of historical daily minimum temperatures",
+                "description": "Average of minimum temperatures",
+            },
+            "Maximum temperature": {
+                "name": "temperature_2m_max",
+                "title": "Maximum temperatures",
+                "subtitle": "Compared to average of historical daily maximum temperatures",
+                "description": "Average of maximum temperatures",
+            },
+            "Precipitation": {
+                "name": "precipitation_sum",
+                "title": "Cumulated Precipitation",
+                "subtitle": "Compared to historical values",
+                "description": "Cumulated Precipitation",
+            },
+        }
+        selected_metric = st.selectbox("Metric:", list(metrics.keys()))
+        form_values["metric"] = metrics[selected_metric]
 
+        with st.expander("Advanced settings"):
             # Selection for unit system
             units = {
                 "Metric System (°C, mm)": "metric",
