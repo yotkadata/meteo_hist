@@ -161,7 +161,7 @@ def build_form(method: str = "by_name") -> dict:
                 "name": "precipitation_sum",
                 "title": "Cumulated Precipitation",
                 "subtitle": "Compared to historical values",
-                "description": "Cumulated Precipitation",
+                "description": "Mean of cumulated Precipitation",
             },
         }
         selected_metric = st.selectbox("Metric:", list(metrics.keys()))
