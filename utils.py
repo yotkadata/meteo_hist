@@ -505,7 +505,10 @@ class MeteoHist:
             ha="right",
         )
         plt.title(
-            f"{self.settings['metric']['subtitle']} ({self.reference_period[0]}-{self.reference_period[1]})",
+            (
+                f"{self.settings['metric']['subtitle']} "
+                f"({self.reference_period[0]}-{self.reference_period[1]})"
+            ),
             fontsize=14,
             fontweight="normal",
             x=1,
@@ -557,7 +560,10 @@ class MeteoHist:
 
         # Add annotation for mean line, with arrow pointing to the line
         axes.annotate(
-            f"{self.settings['metric']['description']}\n{self.reference_period[0]}-{self.reference_period[1]}",
+            (
+                f"{self.settings['metric']['description']}\n"
+                f"{self.reference_period[0]}-{self.reference_period[1]}"
+            ),
             # Position arrow to the left of the annotation
             xy=(
                 int(365 / 3.5 - 30),
