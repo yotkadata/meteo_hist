@@ -161,6 +161,14 @@ def build_form(method: str = "by_name") -> dict:
             selected_metric = st.selectbox("Metric:", list(metrics.keys()))
             form_values["metric"] = metrics[selected_metric]
 
+            # Selection for unit system
+            units = {
+                "Metric System (°C)": "metric",
+                "Imperial System (°F)": "imperial",
+            }
+            selected_units = st.selectbox("Temperature units:", list(units.keys()))
+            form_values["units"] = units[selected_units]
+
             # Slider to apply LOWESS smoothing
             form_values["smooth"] = st.slider(
                 "Smoothing:",
@@ -309,6 +317,7 @@ def download_data(inputs: dict) -> pd.DataFrame():
             year=inputs["year"],
             reference_period=inputs["ref_period"],
             metric=inputs["metric"]["name"],
+            units=inputs["units"],
         )
 
         # Get last available date and save it

@@ -49,6 +49,7 @@ def get_data(
     reference_period: str = "1991-2020",
     timezone: str = "Europe/Berlin",
     metric="temperature_2m_mean",
+    units="metric",
 ) -> pd.DataFrame:
     """
     Get data from the API and return a DataFrame with the data.
@@ -58,11 +59,15 @@ def get_data(
 
     start_date, end_date = calc_dates(reference_period, year)
 
+    # Set unit to be used
+    unit_temperature = "fahrenheit" if units == "imperial" else "celsius"
+
     url = (
         "https://archive-api.open-meteo.com/v1/archive?"
         f"latitude={lat}&longitude={lon}&"
         f"start_date={start_date}&end_date={end_date}&"
         f"daily={metric}&timezone={timezone}"
+        f"&temperature_unit={unit_temperature}"
     )
 
     # Get the data from the API
@@ -250,8 +255,9 @@ class MeteoHist:
                 "title": "Mean temperatures",
                 "subtitle": "Compared to historical daily mean temperatures",
                 "description": "Mean Temperature",
-                "unit": "°C",
             },
+            "units": "metric",
+            "unit_temperature": "°C",
             "alternate_months": {
                 "apply": True,
                 "odd_color": "#fff",
@@ -261,10 +267,19 @@ class MeteoHist:
             },
         }
 
-        if isinstance(settings, dict):
-            return deep_update(default_settings, settings)
+        # Update default settings if a settings dict was provided
+        settings = (
+            deep_update(default_settings, settings)
+            if isinstance(settings, dict)
+            else default_settings
+        )
 
-        return default_settings
+        # Adjust units if system was changed
+        if settings["units"] == "imperial":
+            settings["unit_temperature"] = "°F"
+            settings["yaxis_label"] = "Temperature (°F)"
+
+        return settings
 
     def p05(self, series: pd.Series) -> float:
         """
@@ -695,7 +710,7 @@ class MeteoHist:
                 zorder=3,
             )
             axes.annotate(
-                f"+{df_max[f'{self.year}_diff'].values[i]:.1f}{self.settings['metric']['unit']}",
+                f"+{df_max[f'{self.year}_diff'].values[i]:.1f}{self.settings['unit_temperature']}",
                 xy=(
                     df_max.index[i],
                     df_max[f"{self.year}_above"].values[i],
