@@ -543,13 +543,25 @@ class MeteoHist:
         axes.annotate(
             f"{self.settings['metric']['description']}\n{self.reference_period[0]}-{self.reference_period[1]}",
             # Position arrow to the left of the annotation
-            xy=(366 / 3.5 - 30, self.df_t["mean"].iloc[int(366 / 3.5 - 30)]),
+            xy=(
+                int(365 / 3.5 - 30),
+                self.df_t["mean"].iloc[int(365 / 3.5 - 30)],
+            ),
             # Position text in ~April / between p05 line and minimum
-            xytext=(366 / 3.5, (self.df_t["p05"].iloc[int(366 / 3.5)] + minimum) / 2),
-            arrowprops={"arrowstyle": "-", "facecolor": "black", "edgecolor": "black"},
+            xytext=(
+                int(365 / 3.5),
+                (self.df_t["p05"].iloc[int(365 / 3.5)] + minimum) / 2,
+            ),
+            arrowprops={
+                "arrowstyle": "-",
+                "facecolor": "black",
+                "edgecolor": "black",
+                "shrinkB": 0,  # Remove distance to mean line
+            },
             horizontalalignment="center",
             verticalalignment="center",
             color="black",
+            zorder=10,
         )
 
         # Get value in the middle between p05 and mean
@@ -569,6 +581,7 @@ class MeteoHist:
             horizontalalignment="center",
             verticalalignment="bottom",
             color="black",
+            zorder=10,
         )
 
     def add_data_source(self, fig):
