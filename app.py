@@ -157,7 +157,7 @@ def build_form(method: str = "by_name") -> dict:
                 "subtitle": "Compared to average of historical daily maximum temperatures",
                 "description": "Average of maximum temperatures",
             },
-            "Precipitation": {
+            "Cumulated Precipitation": {
                 "name": "precipitation_sum",
                 "title": "Cumulated Precipitation",
                 "subtitle": "Compared to historical values",
@@ -304,7 +304,7 @@ def process_form(form_values: dict) -> dict:
         form_values["metric"]["unit"] = units[form_values["units"]]["precipitation"]
         form_values["metric"]["yaxis_label"] = "Precipitation"
         form_values["colors"] = {
-            "cmap_above": "Greens",
+            "cmap_above": "YlGnBu",
             "cmap_below": "YlOrRd_r",
             "fill_percentiles": "#f8f8f8",
         }
