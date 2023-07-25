@@ -111,8 +111,8 @@ def build_form(method: str = "by_name") -> dict:
                 index=3,
                 help="""
                     The reference period is used to calculate the historical average of
-                    the daily temperatures. The average is then used to compare the daily
-                    temperatures of the selected year. 1961-1990 is currently considered
+                    the daily values. The average is then used to compare the daily
+                    values of the selected year. 1961-1990 is currently considered
                     the best "long-term climate change assessment" by the World Meteorological
                     Organization (WMO).
                     """,
@@ -172,7 +172,7 @@ def build_form(method: str = "by_name") -> dict:
                 "Metric System (°C, mm)": "metric",
                 "Imperial System (°F, In)": "imperial",
             }
-            selected_units = st.selectbox("Temperature units:", list(units.keys()))
+            selected_units = st.selectbox("Units:", list(units.keys()))
             form_values["units"] = units[selected_units]
 
             # Slider to apply LOWESS smoothing
@@ -294,7 +294,7 @@ def process_form(form_values: dict) -> dict:
         "imperial": {"temperature": "°F", "precipitation": "In"},
     }
 
-    # Set unit for temperature graphs
+    # Set unit for graphs
     if "temperature" in form_values["metric"]["name"]:
         form_values["metric"]["unit"] = units[form_values["units"]]["temperature"]
 
@@ -386,7 +386,7 @@ def create_graph(data: pd.DataFrame, inputs: dict) -> plt.Figure:
 
 
 # Set page title
-st.set_page_config(page_title="Historical Temperature Graph", layout="wide")
+st.set_page_config(page_title="Historical Meteo Graphs", layout="wide")
 
 # Include custom CSS
 with open("style.css", encoding="utf-8") as css:
@@ -397,7 +397,7 @@ col1, col2 = st.columns([1, 3])
 with col1:
     # Set page title
     st.markdown(
-        "<h3 style='padding-top:0;'>Historical Temperature Graph</h2>",
+        "<h3 style='padding-top:0;'>Historical Meteo Graphs</h2>",
         unsafe_allow_html=True,
     )
 
