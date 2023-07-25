@@ -272,17 +272,10 @@ def process_form(form_values: dict) -> dict:
             # Calculate polynomial degree based on smoothing value
             # 1->7, 2->1 (lower values mean more smoothing)
             "polynomial": degrees[form_values["smooth"]],
-            "bandwidth": 0.1,
         }
 
     # Setting for alternating background colors for months
-    form_values["alternate_months"] = {
-        "apply": form_values["alternate_months"],
-        "odd_color": "#fff",
-        "odd_alpha": 0,
-        "even_color": "#f8f8f8",
-        "even_alpha": 0.3,
-    }
+    form_values["alternate_months"] = {"apply": form_values["alternate_months"]}
 
     return form_values
 

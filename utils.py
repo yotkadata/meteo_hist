@@ -17,6 +17,7 @@ import requests
 import seaborn as sns
 import streamlit as st
 from matplotlib import ticker
+from pydantic.v1.utils import deep_update
 from unidecode import unidecode
 
 
@@ -260,7 +261,7 @@ class MeteoHist:
         }
 
         if isinstance(settings, dict):
-            default_settings.update(settings)
+            return deep_update(default_settings, settings)
 
         return default_settings
 
