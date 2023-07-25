@@ -250,6 +250,7 @@ class MeteoHist:
                 "title": "Mean temperatures",
                 "subtitle": "Compared to historical daily mean temperatures",
                 "description": "Mean Temperature",
+                "unit": "°C",
             },
             "alternate_months": {
                 "apply": True,
@@ -694,7 +695,7 @@ class MeteoHist:
                 zorder=3,
             )
             axes.annotate(
-                f"+{df_max[f'{self.year}_diff'].values[i]:.1f}°C",
+                f"+{df_max[f'{self.year}_diff'].values[i]:.1f}{self.settings['metric']['unit']}",
                 xy=(
                     df_max.index[i],
                     df_max[f"{self.year}_above"].values[i],
