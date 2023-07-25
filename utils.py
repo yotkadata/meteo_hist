@@ -307,8 +307,6 @@ class MeteoHist:
         # For precipitation, change values to cumulated sum for each year
         if self.settings["metric"]["name"] == "precipitation_sum":
             df_f["value"] = df_f.groupby(["year"])["value"].cumsum()
-            # Remove day 366 because it causes inconsistencies
-            df_f = df_f[df_f["dayofyear"] != 366].copy()
 
         # Remove all Feb 29 rows to get rid of leap days
         df_f = df_f[
