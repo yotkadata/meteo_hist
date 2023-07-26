@@ -157,7 +157,13 @@ def build_form(method: str = "by_name") -> dict:
                 "subtitle": "Compared to average of historical daily maximum temperatures",
                 "description": "Average of maximum temperatures",
             },
-            "Cumulated Precipitation": {
+            "Precipitation (Rolling average)": {
+                "name": "precipitation_sum",
+                "title": "Precipitation",
+                "subtitle": "30-day Rolling Average compared to historical values",
+                "description": "Mean of Rolling Average",
+            },
+            "Precipitation (Cumulated)": {
                 "name": "precipitation_sum",
                 "title": "Cumulated Precipitation",
                 "subtitle": "Compared to historical values",

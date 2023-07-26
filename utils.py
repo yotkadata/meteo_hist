@@ -304,10 +304,6 @@ class MeteoHist:
         df_f["dayofyear"] = df_f["date"].dt.dayofyear
         df_f["year"] = df_f["date"].dt.year
 
-        # For precipitation, change values to cumulated sum for each year
-        if self.settings["metric"]["name"] == "precipitation_sum":
-            df_f["value"] = df_f.groupby(["year"])["value"].cumsum()
-
         # Remove all Feb 29 rows to get rid of leap days
         df_f = df_f[
             ~((df_f["date"].dt.month == 2) & (df_f["date"].dt.day == 29))
@@ -321,6 +317,14 @@ class MeteoHist:
 
         # Reset index
         df_f.reset_index(drop=True, inplace=True)
+
+        # For rolling precipitation, change values to rolling average
+        if self.settings["metric"]["title"] == "Precipitation":
+            df_f["value"] = df_f["value"].rolling(window=30, min_periods=30).mean()
+
+        # For cumulated precipitation, change values to cumulated sum for each year
+        if self.settings["metric"]["title"] == "Cumulated Precipitation":
+            df_f["value"] = df_f.groupby(["year"])["value"].cumsum()
 
         # Get last available date and save it
         self.last_date = (
@@ -368,6 +372,10 @@ class MeteoHist:
             lambda x: x[f"{year}"] if x[f"{year}"] < x["mean"] else None,
             axis=1,
         )
+
+        # Convert to dtypes to numeric to avoid errors when all values are None
+        for position in ["above", "below"]:
+            df_g[f"{year}_{position}"] = pd.to_numeric(df_g[f"{year}_{position}"])
 
         # Add column that holds the difference between the year's value and the mean
         df_g[f"{year}_diff"] = df_g[f"{year}"] - df_g["mean"]
@@ -727,6 +735,7 @@ class MeteoHist:
                 if self.settings["peak_alpha"]
                 else 1
             )
+
             # Plot area between mean and year's value
             axes.fill_between(
                 self.df_t.index[i : i + 2],
