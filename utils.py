@@ -366,11 +366,11 @@ class MeteoHist:
         df_f.reset_index(drop=True, inplace=True)
 
         # For rolling precipitation, change values to rolling average
-        if self.settings["metric"]["title"] == "Precipitation":
+        if self.settings["metric"]["name"] == "precipitation_rolling":
             df_f["value"] = df_f["value"].rolling(window=30, min_periods=30).mean()
 
         # For cumulated precipitation, change values to cumulated sum for each year
-        if self.settings["metric"]["title"] == "Cumulated Precipitation":
+        if self.settings["metric"]["name"] == "precipitation_cum":
             df_f["value"] = df_f.groupby(["year"])["value"].cumsum()
 
         # Get last available date and save it
