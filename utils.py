@@ -958,7 +958,7 @@ class MeteoHist:
         Path(self.settings["paths"]["output"]).mkdir(parents=True, exist_ok=True)
 
         file_name = (
-            f"{self.settings['location_name']}-{self.settings['metric']['title']}-{self.year}_"
+            f"{self.settings['location_name']}-{self.settings['metric']['name']}-{self.year}_"
             f"ref-{self.reference_period[0]}-{self.reference_period[1]}.png"
         )
 
