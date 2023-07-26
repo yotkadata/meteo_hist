@@ -15,7 +15,6 @@ import numpy as np
 import pandas as pd
 import requests
 import seaborn as sns
-import streamlit as st
 from matplotlib import ticker
 from pydantic.v1.utils import deep_update
 from unidecode import unidecode
@@ -137,7 +136,6 @@ def get_lat_lon(query: str, lang: str = "en") -> dict:
     return result
 
 
-@st.cache_data(show_spinner=False)
 def get_location(coords: tuple[float, float], lang: str = "en") -> str:
     """
     Get location name from latitude and longitude.

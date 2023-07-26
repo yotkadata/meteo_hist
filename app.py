@@ -31,6 +31,7 @@ def build_location_by_name(location: str) -> tuple[float, float, str]:
         return lat, lon, location_name
 
 
+@st.cache_data(show_spinner=False, ttl="1h")
 def build_location_by_coords(lat: float, lon: float, display_name: str) -> str:
     """
     Build location by coordinates.
