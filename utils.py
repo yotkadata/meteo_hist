@@ -630,18 +630,18 @@ class MeteoHist:
         minimum, maximum = self.get_y_limits()
 
         if self.settings["metric"]["name"] == "precipitation_cum":
-            # Position arrow in ~March
+            # Position arrow in mid March
             arrow_xy = (
                 int(365 / 3.5 - 30),
                 self.df_t["mean"].iloc[int(365 / 3.5 - 30)],
             )
 
-            # Position text in ~February / between max and total max
+            # Position text in mid Febuary / between max and total max
             text_xy = (
-                int(365 / 12 * 2),
+                int(365 / 12 * 1.5),
                 (self.df_t["p95"].iloc[int(365 / 24)] + maximum) / 2,
             )
-            text_ha = "right"
+            text_ha = "center"
             text_va = "center"
         elif self.settings["metric"]["name"] == "precipitation_rolling":
             # Position arrow in ~March
@@ -650,13 +650,10 @@ class MeteoHist:
                 self.df_t["mean"].iloc[int(365 / 3.5 - 30)],
             )
 
-            # Position text in ~February / between max and total max
-            text_xy = (
-                int(365 / 12 * 2),
-                (self.df_t["p95"].iloc[int(365 / 24)] + maximum) / 2,
-            )
-            text_ha = "right"
-            text_va = "center"
+            # Position text in January almost at the top
+            text_xy = (int(365 / 12), maximum * 0.95)
+            text_ha = "center"
+            text_va = "top"
         else:
             # Position arrow to the left of the annotation
             arrow_xy = (
@@ -693,41 +690,48 @@ class MeteoHist:
         )
 
         if self.settings["metric"]["name"] == "precipitation_cum":
-            # Position arrow in September, in the middle between p05 and 0
+            # Position arrow in September, inside p05 area
+            x_pos = int(365 / 12 * 9)
             arrow_xy = (
-                int(365 / 12 * 9),
+                x_pos,
                 (
-                    self.df_t["p05"].iloc[int(365 / 12 * 9)]
-                    + self.df_t["mean"].iloc[int(365 / 12 * 9)]
-                )
-                / 2,
+                    self.df_t["p05"].iloc[x_pos]
+                    + (
+                        (self.df_t["mean"].iloc[x_pos] - self.df_t["p05"].iloc[x_pos])
+                        / 6
+                    )
+                ),
             )
 
-            # Position text (almost) on the bottom
+            # Position text between p05 and zero
             text_xy = (
-                int(365 / 12 * 11),
-                (self.df_t["p05"].iloc[int(365 / 12 * 9)] + minimum * 1.02) / 2,
+                int(365 / 12 * 10.5),
+                (self.df_t["p05"].iloc[int(365 / 12 * 8)] + minimum) / 2,
             )
             text_ha = "center"
             text_va = "center"
+
         elif self.settings["metric"]["name"] == "precipitation_rolling":
-            # Position arrow in September, in the middle between p05 and 0
+            # Position arrow in September, inside p95 area
+            x_pos = int(365 / 12 * 9)
             arrow_xy = (
-                int(365 / 12 * 9),
+                x_pos,
                 (
-                    self.df_t["p05"].iloc[int(365 / 12 * 9)]
-                    + self.df_t["mean"].iloc[int(365 / 12 * 9)]
-                )
-                / 2,
+                    self.df_t["p95"].iloc[x_pos]
+                    - (
+                        (self.df_t["p95"].iloc[x_pos] - self.df_t["mean"].iloc[x_pos])
+                        / 6
+                    )
+                ),
             )
 
-            # Position text (almost) on the bottom
+            # Position text (almost) at the top
             text_xy = (
-                int(365 / 12 * 11),
-                (self.df_t["p05"].iloc[int(365 / 12 * 9)] + minimum * 1.02) / 2,
+                int(365 / 12 * 10.5),
+                maximum * 0.95,
             )
             text_ha = "center"
-            text_va = "center"
+            text_va = "top"
         else:
             # Position arrow in October, in the middle between p05 and mean
             arrow_xy = (
