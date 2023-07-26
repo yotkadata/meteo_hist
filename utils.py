@@ -395,11 +395,16 @@ class MeteoHist:
         """
         Calculate the y-axis limits for the plot.
         """
-        # Get minimums of year's mean and 5th percentile
-        minimum = self.df_t[[f"{self.year}", "p05"]].min(axis=1).min()
-        # Get next integer multiple of 2
-        # (0.1 subtracted for edge case where minimum is a multiple of 2)
-        minimum = int(np.floor((minimum - 0.1) / 2)) * 2
+
+        # If metric is precipitation, set minimum to zero
+        if self.settings["metric"]["name"] == "precipitation_sum":
+            minimum = 0
+        else:
+            # Get minimums of year's mean and 5th percentile
+            minimum = self.df_t[[f"{self.year}", "p05"]].min(axis=1).min()
+            # Get next integer multiple of 2
+            # (0.1 subtracted for edge case where minimum is a multiple of 2)
+            minimum = int(np.floor((minimum - 0.1) / 2)) * 2
 
         # Get maximum of year's mean and 95th percentile
         maximum = self.df_t[[f"{self.year}", "p95"]].max(axis=1).max()
