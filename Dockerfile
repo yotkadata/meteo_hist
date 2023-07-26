@@ -22,6 +22,7 @@ RUN pip install -r requirements.txt
 COPY *.py .
 COPY *.css .
 COPY ./output ./output
+COPY .streamlit/config.toml .streamlit/config.toml
 
 EXPOSE 8501
 
