@@ -47,7 +47,6 @@ def get_data(
     lon: float,
     year: int = None,
     reference_period: str = "1991-2020",
-    timezone: str = "Europe/Berlin",
     metric="temperature_2m_mean",
     units="metric",
 ) -> pd.DataFrame:
@@ -63,7 +62,7 @@ def get_data(
         "https://archive-api.open-meteo.com/v1/archive?"
         f"latitude={lat}&longitude={lon}&"
         f"start_date={start_date}&end_date={end_date}&"
-        f"daily={metric}&timezone={timezone}"
+        f"daily={metric}&timezone=auto"
     )
 
     # Set unit to be used
