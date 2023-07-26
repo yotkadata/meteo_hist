@@ -244,7 +244,6 @@ class MeteoHist:
             },
             "num_files_to_keep": 100,
             "highlight_max": 1,
-            "max_annotation": 0,
             "peak_alpha": True,
             "peak_method": "mean",
             "smooth": {
@@ -402,19 +401,13 @@ class MeteoHist:
         else:
             # Get minimums of year's mean and 5th percentile
             minimum = self.df_t[[f"{self.year}", "p05"]].min(axis=1).min()
-            # Get next integer multiple of 2
-            # (0.1 subtracted for edge case where minimum is a multiple of 2)
-            minimum = int(np.floor((minimum - 0.1) / 2)) * 2
+            # Subtract 5%
+            minimum = minimum - (abs(minimum) * 0.05)
 
         # Get maximum of year's mean and 95th percentile
         maximum = self.df_t[[f"{self.year}", "p95"]].max(axis=1).max()
-        # Get next integer multiple of 2
-        # (0.1 added for edge case where maximum is a multiple of 2)
-        maximum = int(np.ceil((maximum + 0.1) / 2)) * 2
-
-        # Raise maximum if annotation is higher
-        if self.settings["max_annotation"] > maximum:
-            maximum = int(np.ceil((self.settings["max_annotation"] + 0.1) / 2)) * 2
+        # Add 5%
+        maximum = maximum + (abs(maximum) * 0.05)
 
         return minimum, maximum
 
@@ -662,7 +655,7 @@ class MeteoHist:
             )
 
             # Position text (almost) on the bottom
-            text_xy = (int(365 / 12 * 9), minimum * 1.02)
+            text_xy = (int(365 / 12 * 9), minimum + (abs(minimum) * 0.05))
             text_ha = "center"
             text_va = "bottom"
 
@@ -800,9 +793,6 @@ class MeteoHist:
                 horizontalalignment="center",
                 verticalalignment="bottom",
             )
-
-        # Update the maximum annotation in the settings
-        self.settings["max_annotation"] = df_max[f"{self.year}_above"].max() + 1
 
     def clean_output_dir(self, num_files_to_keep: int = None) -> None:
         """
