@@ -233,11 +233,6 @@ class MeteoHist:
                 "xtick.labelsize": 11,
                 "ytick.labelsize": 11,
             },
-            "colors": {
-                "fill_percentiles": "#f8f8f8",
-                "cmap_above": "YlOrRd",
-                "cmap_below": "YlGnBu_r",
-            },
             "paths": {
                 "output": "output",
             },
@@ -255,12 +250,18 @@ class MeteoHist:
             "lon": None,
             "location_name": None,
             "metric": {
-                "name": "temperature_2m_mean",
+                "name": "temperature_mean",
+                "data": "temperature_2m_mean",
                 "title": "Mean temperatures",
                 "subtitle": "Compared to historical daily mean temperatures",
                 "description": "Mean Temperature",
                 "unit": "°C",
                 "yaxis_label": "Temperature",
+                "colors": {
+                    "fill_percentiles": "#f8f8f8",
+                    "cmap_above": "YlOrRd",
+                    "cmap_below": "YlGnBu_r",
+                },
             },
             "alternate_months": {
                 "apply": True,
@@ -271,14 +272,62 @@ class MeteoHist:
             },
         }
 
-        # Update default settings if a settings dict was provided
-        settings = (
-            deep_update(default_settings, settings)
-            if isinstance(settings, dict)
-            else default_settings
-        )
+        # Define default values by metric
+        defaults_by_metric = {
+            "temperature_min": {
+                "name": "temperature_min",
+                "data": "temperature_2m_min",
+                "title": "Minimum temperatures",
+                "subtitle": "Compared to average of historical daily minimum temperatures",
+                "description": "Average of minimum temperatures",
+            },
+            "temperature_max": {
+                "name": "temperature_max",
+                "data": "temperature_2m_max",
+                "title": "Maximum temperatures",
+                "subtitle": "Compared to average of historical daily maximum temperatures",
+                "description": "Average of maximum temperatures",
+            },
+            "precipitation_rolling": {
+                "name": "precipitation_rolling",
+                "data": "precipitation_sum",
+                "title": "Precipitation",
+                "subtitle": "30-day Rolling Average compared to historical values",
+                "description": "Mean of Rolling Average",
+                "unit": "mm",
+                "yaxis_label": "Precipitation",
+                "colors": {
+                    "cmap_above": "YlGnBu",
+                    "cmap_below": "YlOrRd_r",
+                },
+            },
+            "precipitation_cum": {
+                "name": "precipitation_cum",
+                "data": "precipitation_sum",
+                "title": "Precipitation",
+                "subtitle": "Cumuluated precipitation compared to historical values",
+                "description": "Mean of cumulated Precipitation",
+                "unit": "mm",
+                "yaxis_label": "Precipitation",
+                "colors": {
+                    "cmap_above": "YlGnBu",
+                    "cmap_below": "YlOrRd_r",
+                },
+            },
+        }
 
-        return settings
+        # Update default settings if a settings dict was provided
+        if isinstance(settings, dict):
+            # Get metric defaults if metric is not defined in default_settings
+            if settings["metric"]["name"] != default_settings["metric"]["name"]:
+                default_settings["metric"] = deep_update(
+                    default_settings["metric"],
+                    defaults_by_metric[settings["metric"]["name"]],
+                )
+            settings = deep_update(default_settings, settings)
+            return settings
+
+        return default_settings
 
     def p05(self, series: pd.Series) -> float:
         """
@@ -395,18 +444,22 @@ class MeteoHist:
         """
 
         # If metric is precipitation, set minimum to zero
-        if self.settings["metric"]["name"] == "precipitation_sum":
+        if self.settings["metric"]["data"] == "precipitation_sum":
             minimum = 0
         else:
             # Get minimums of year's mean and 5th percentile
             minimum = self.df_t[[f"{self.year}", "p05"]].min(axis=1).min()
             # Subtract 5%
-            minimum = minimum - (abs(minimum) * 0.05)
+            minimum -= abs(minimum) * 0.05
 
         # Get maximum of year's mean and 95th percentile
         maximum = self.df_t[[f"{self.year}", "p95"]].max(axis=1).max()
         # Add 5%
-        maximum = maximum + (abs(maximum) * 0.05)
+        maximum += abs(maximum) * 0.05
+
+        # Make room for annotation in rolling precipitation graphs
+        if self.settings["metric"]["name"] == "precipitation_rolling":
+            maximum += abs(maximum) * 0.2
 
         return minimum, maximum
 
@@ -460,7 +513,8 @@ class MeteoHist:
 
         # Format y-axis labels to use int
         current_values = plt.gca().get_yticks()
-        plt.gca().set_yticklabels([f"{x:.0f}" for x in current_values])
+        if max(current_values) > 10:
+            plt.gca().set_yticklabels([f"{x:.0f}" for x in current_values])
 
     def alternate_months(self, axes):
         """
@@ -545,7 +599,7 @@ class MeteoHist:
             self.df_t.index,
             self.df_t[f"p{percentiles[0]}"],
             self.df_t[f"p{percentiles[1]}"],
-            color=self.settings["colors"]["fill_percentiles"],
+            color=self.settings["metric"]["colors"]["fill_percentiles"],
         )
 
         for percentile in percentiles:
@@ -575,7 +629,21 @@ class MeteoHist:
         """
         minimum, maximum = self.get_y_limits()
 
-        if self.settings["metric"]["name"] == "precipitation_sum":
+        if self.settings["metric"]["name"] == "precipitation_cum":
+            # Position arrow in ~March
+            arrow_xy = (
+                int(365 / 3.5 - 30),
+                self.df_t["mean"].iloc[int(365 / 3.5 - 30)],
+            )
+
+            # Position text in ~February / between max and total max
+            text_xy = (
+                int(365 / 12 * 2),
+                (self.df_t["p95"].iloc[int(365 / 24)] + maximum) / 2,
+            )
+            text_ha = "right"
+            text_va = "center"
+        elif self.settings["metric"]["name"] == "precipitation_rolling":
             # Position arrow in ~March
             arrow_xy = (
                 int(365 / 3.5 - 30),
@@ -624,7 +692,25 @@ class MeteoHist:
             zorder=10,
         )
 
-        if self.settings["metric"]["name"] == "precipitation_sum":
+        if self.settings["metric"]["name"] == "precipitation_cum":
+            # Position arrow in September, in the middle between p05 and 0
+            arrow_xy = (
+                int(365 / 12 * 9),
+                (
+                    self.df_t["p05"].iloc[int(365 / 12 * 9)]
+                    + self.df_t["mean"].iloc[int(365 / 12 * 9)]
+                )
+                / 2,
+            )
+
+            # Position text (almost) on the bottom
+            text_xy = (
+                int(365 / 12 * 11),
+                (self.df_t["p05"].iloc[int(365 / 12 * 9)] + minimum * 1.02) / 2,
+            )
+            text_ha = "center"
+            text_va = "center"
+        elif self.settings["metric"]["name"] == "precipitation_rolling":
             # Position arrow in September, in the middle between p05 and 0
             arrow_xy = (
                 int(365 / 12 * 9),
@@ -873,10 +959,14 @@ class MeteoHist:
         self.plot_percentile_lines(axes)
 
         # Plot value above mean
-        self.plot_diff(axes, cmap=self.settings["colors"]["cmap_above"], method="above")
+        self.plot_diff(
+            axes, cmap=self.settings["metric"]["colors"]["cmap_above"], method="above"
+        )
 
         # Plot value below mean
-        self.plot_diff(axes, cmap=self.settings["colors"]["cmap_below"], method="below")
+        self.plot_diff(
+            axes, cmap=self.settings["metric"]["colors"]["cmap_below"], method="below"
+        )
 
         # Annotate maximum values
         if self.settings["highlight_max"] > 0:

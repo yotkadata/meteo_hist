@@ -140,34 +140,24 @@ def build_form(method: str = "by_name") -> dict:
         # Selector for metric
         metrics = {
             "Mean temperature": {
-                "name": "temperature_2m_mean",
-                "title": "Mean temperatures",
-                "subtitle": "Compared to historical daily mean temperatures",
-                "description": "Mean Temperature",
+                "name": "temperature_mean",
+                "data": "temperature_2m_mean",
             },
             "Minimum temperature": {
-                "name": "temperature_2m_min",
-                "title": "Minimum temperatures",
-                "subtitle": "Compared to average of historical daily minimum temperatures",
-                "description": "Average of minimum temperatures",
+                "name": "temperature_min",
+                "data": "temperature_2m_min",
             },
             "Maximum temperature": {
-                "name": "temperature_2m_max",
-                "title": "Maximum temperatures",
-                "subtitle": "Compared to average of historical daily maximum temperatures",
-                "description": "Average of maximum temperatures",
+                "name": "temperature_max",
+                "data": "temperature_2m_max",
             },
             "Precipitation (Rolling average)": {
-                "name": "precipitation_sum",
-                "title": "Precipitation",
-                "subtitle": "30-day Rolling Average compared to historical values",
-                "description": "Mean of Rolling Average",
+                "name": "precipitation_rolling",
+                "data": "precipitation_sum",
             },
             "Precipitation (Cumulated)": {
-                "name": "precipitation_sum",
-                "title": "Cumulated Precipitation",
-                "subtitle": "Compared to historical values",
-                "description": "Mean of cumulated Precipitation",
+                "name": "precipitation_cum",
+                "data": "precipitation_sum",
             },
         }
         selected_metric = st.selectbox("Metric:", list(metrics.keys()))
@@ -301,19 +291,13 @@ def process_form(form_values: dict) -> dict:
         "imperial": {"temperature": "°F", "precipitation": "In"},
     }
 
-    # Set unit for graphs
+    # Set unit for temperature graphs
     if "temperature" in form_values["metric"]["name"]:
         form_values["metric"]["unit"] = units[form_values["units"]]["temperature"]
 
     # Set unit for precipitation graphs
-    if form_values["metric"]["name"] == "precipitation_sum":
+    if "precipitation" in form_values["metric"]["name"]:
         form_values["metric"]["unit"] = units[form_values["units"]]["precipitation"]
-        form_values["metric"]["yaxis_label"] = "Precipitation"
-        form_values["colors"] = {
-            "cmap_above": "YlGnBu",
-            "cmap_below": "YlOrRd_r",
-            "fill_percentiles": "#f8f8f8",
-        }
 
     # Setting for alternating background colors for months
     form_values["alternate_months"] = {"apply": form_values["alternate_months"]}
@@ -353,7 +337,7 @@ def download_data(inputs: dict) -> pd.DataFrame():
             inputs["lon"],
             year=inputs["year"],
             reference_period=inputs["ref_period"],
-            metric=inputs["metric"]["name"],
+            metric=inputs["metric"]["data"],
             units=inputs["units"],
         )
 
