@@ -466,6 +466,10 @@ class MeteoHist:
             tick.tick2line.set_markersize(0)
             tick.label1.set_horizontalalignment("center")
 
+        # Format y-axis labels to use int
+        current_values = plt.gca().get_yticks()
+        plt.gca().set_yticklabels([f"{x:.0f}" for x in current_values])
+
     def alternate_months(self, axes):
         """
         Add alternating background color for months.
