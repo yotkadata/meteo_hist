@@ -41,7 +41,6 @@ def calc_dates(ref_period: tuple[int, int], year: int) -> tuple[str, str]:
     return date_start, date_end
 
 
-@st.cache_data(show_spinner=False)
 def get_data(
     lat: float,
     lon: float,
@@ -92,7 +91,6 @@ def get_data(
     return df_t
 
 
-@st.cache_data(show_spinner=False)
 def get_lat_lon(query: str, lang: str = "en") -> dict:
     """
     Get latitude and longitude from a query string.
@@ -105,28 +103,36 @@ def get_lat_lon(query: str, lang: str = "en") -> dict:
 
     # Get the data from the API
     location = requests.get(url, timeout=30)
-
     location = location.json()
 
-    result = {}
-    for i, loc in enumerate(location):
-        if "lat" in loc:
-            keys = ["city", "town", "village", "hamlet", "suburb"]
-            location_name = loc["display_name"]
+    keys = [
+        "city",
+        "town",
+        "village",
+        "hamlet",
+        "suburb",
+        "municipality",
+        "district",
+        "county",
+        "state",
+    ]
 
-            for key in keys:
-                if key in loc["address"]:
-                    location_name = (
-                        f"{loc['address'][key]}, {loc['address']['country']}"
-                    )
-                    break
+    result = []
 
-            result[i] = {
-                "display_name": loc["display_name"],
-                "location_name": location_name,
-                "lat": loc["lat"],
-                "lon": loc["lon"],
-            }
+    for key in keys:
+        for loc in location:
+            if loc["type"] == "administrative" and key in loc["address"]:
+                result.append(
+                    {
+                        "display_name": loc["display_name"],
+                        "location_name": f"{loc['address'][key]}, {loc['address']['country']}",
+                        "lat": loc["lat"],
+                        "lon": loc["lon"],
+                        "key": key,
+                        "keys": loc["address"].keys(),
+                    }
+                )
+                break
 
     return result
 

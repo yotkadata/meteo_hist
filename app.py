@@ -305,6 +305,7 @@ def process_form(form_values: dict) -> dict:
     return form_values
 
 
+@st.cache_data(show_spinner=False, ttl="1h")
 def download_data(inputs: dict) -> pd.DataFrame():
     """
     Download data from open-meteo.com.
