@@ -116,19 +116,19 @@ def get_lat_lon(query: str, lang: str = "en") -> dict:
         "state",
     ]
 
+    types = ["city", "administrative", "town", "village"]
+
     result = []
 
     for key in keys:
         for loc in location:
-            if loc["type"] == "administrative" and key in loc["address"]:
+            if loc["type"] in types and key in loc["address"]:
                 result.append(
                     {
                         "display_name": loc["display_name"],
                         "location_name": f"{loc['address'][key]}, {loc['address']['country']}",
                         "lat": loc["lat"],
                         "lon": loc["lon"],
-                        "key": key,
-                        "keys": loc["address"].keys(),
                     }
                 )
                 break
