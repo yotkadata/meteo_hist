@@ -463,6 +463,38 @@ class MeteoHist:
 
         return minimum, maximum
 
+    def get_min_max(
+        self, period: tuple[int, int], which: str = "max", metric: str = "all"
+    ) -> tuple[float, float]:
+        """
+        Get minimum or maximum value over a time period.
+
+        Parameters
+        ----------
+        period: tuple of ints
+            First and last day of the period (as day_of_year from 1 to 365).
+        which: str
+            Which value to return, min or max.
+        metric: str
+            Metric to get min/max value from. By default "all": min/max values of all metrics.
+            Possible values: all, p05, mean, p95, year
+        """
+
+        if metric == "year":
+            metrics = [f"{self.year}"]
+        elif metric in ["p05", "mean", "p95"]:
+            metrics = [metric]
+        else:
+            metrics = ["p05", "mean", "p95", f"{self.year}"]
+
+        df_t = self.df_t[self.df_t["dayofyear"].between(period[0], period[1])][metrics]
+
+        # Return minimum or maximum value
+        if which == "min":
+            return df_t.min(axis=1).min()
+
+        return df_t.max(axis=1).max()
+
     def set_plot_styles(self):
         """
         Set the plot styles.
@@ -627,7 +659,7 @@ class MeteoHist:
         """
         Add annotations to the plot to explain the data.
         """
-        minimum, maximum = self.get_y_limits()
+        y_min, y_max = self.get_y_limits()
 
         if self.settings["metric"]["name"] == "precipitation_cum":
             # Position arrow in mid March
@@ -639,7 +671,7 @@ class MeteoHist:
             # Position text in mid Febuary / between max and total max
             text_xy = (
                 int(365 / 12 * 1.5),
-                (self.df_t["p95"].iloc[int(365 / 24)] + maximum) / 2,
+                (self.df_t["p95"].iloc[int(365 / 24)] + y_max) / 2,
             )
             text_ha = "center"
             text_va = "center"
@@ -650,10 +682,16 @@ class MeteoHist:
                 self.df_t["mean"].iloc[int(365 / 3.5 - 30)],
             )
 
-            # Position text in January almost at the top
-            text_xy = (int(365 / 12), maximum * 0.95)
+            # Position text in January between top and maximum value
+            # Get maximum values between Jan and Mar
+            max_value = self.get_min_max((1, 90))
+            text_xy = (
+                int(365 / 12),
+                (y_max + max_value) / 2,
+            )
             text_ha = "center"
-            text_va = "top"
+            text_va = "center"
+
         else:
             # Position arrow to the left of the annotation
             arrow_xy = (
@@ -664,7 +702,7 @@ class MeteoHist:
             # Position text in ~April / between p05 line and minimum
             text_xy = (
                 int(365 / 3.5),
-                (self.df_t["p05"].iloc[int(365 / 3.5)] + minimum) / 2,
+                (self.df_t["p05"].iloc[int(365 / 3.5)] + y_min) / 2,
             )
             text_ha = "center"
             text_va = "center"
@@ -706,14 +744,14 @@ class MeteoHist:
             # Position text between p05 and zero
             text_xy = (
                 int(365 / 12 * 10.5),
-                (self.df_t["p05"].iloc[int(365 / 12 * 8)] + minimum) / 2,
+                (self.df_t["p05"].iloc[int(365 / 12 * 8)] + y_min) / 2,
             )
             text_ha = "center"
             text_va = "center"
 
         elif self.settings["metric"]["name"] == "precipitation_rolling":
             # Position arrow in September, inside p95 area
-            x_pos = int(365 / 12 * 9)
+            x_pos = int(365 / 12 * 9.5)
             arrow_xy = (
                 x_pos,
                 (
@@ -726,12 +764,14 @@ class MeteoHist:
             )
 
             # Position text (almost) at the top
+            # Get maximum values between Oct and Dec
+            max_value = self.get_min_max((274, 365))
             text_xy = (
                 int(365 / 12 * 10.5),
-                maximum * 0.95,
+                (y_max + max_value) / 2,
             )
             text_ha = "center"
-            text_va = "top"
+            text_va = "center"
         else:
             # Position arrow in October, in the middle between p05 and mean
             arrow_xy = (
@@ -744,7 +784,7 @@ class MeteoHist:
             )
 
             # Position text (almost) on the bottom
-            text_xy = (int(365 / 12 * 9), minimum + (abs(minimum) * 0.05))
+            text_xy = (int(365 / 12 * 9), y_min + (abs(y_min) * 0.05))
             text_ha = "center"
             text_va = "bottom"
 
