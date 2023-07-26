@@ -1059,18 +1059,27 @@ class MeteoHist:
         return fig, file_path, self.ref_nans
 
     @staticmethod
-    def show_random(dir_output="output"):
+    def show_random(file_dir: str = None):
         """
         Show a random plot.
         """
-        # Specify the directory
-        dir_output = Path(dir_output)
 
-        # Get all PNG files in the directory
-        files = list(dir_output.glob("*.png"))
+        # Specify directory paths
+        if file_dir is None:
+            file_dirs = [Path("examples"), Path("output")]
+        else:
+            file_dirs = [Path(file_dir)]
 
-        if len(files) > 0:
+        file_paths = []
+
+        for directory in file_dirs:
+            # Get all PNG files in the directory and add them to file_paths
+            file_paths += list(directory.glob("*.png"))
+
+        if len(file_paths) > 0:
             # Choose a random file
-            file = np.random.choice(files)
+            file = np.random.choice(file_paths)
 
             return file.as_posix()
+
+        return None
