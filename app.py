@@ -328,6 +328,10 @@ def download_data(inputs: dict) -> pd.DataFrame():
     if not isinstance(inputs, dict):
         return None
 
+    # Make sure lat/lon values are set
+    if [x for x in (inputs["lat"], inputs["lon"]) if x is None]:
+        return None
+
     url = (
         f"https://www.openstreetmap.org/"
         f"?mlat={inputs['lat']}&mlon={inputs['lon']}"
