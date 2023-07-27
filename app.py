@@ -31,6 +31,7 @@ def build_location_by_name(location: str) -> tuple[float, float, str]:
         return lat, lon, location_name
 
 
+@st.cache_data(show_spinner=False, ttl="1h")
 def build_location_by_coords(lat: float, lon: float, display_name: str) -> str:
     """
     Build location by coordinates.
@@ -111,8 +112,8 @@ def build_form(method: str = "by_name") -> dict:
                 index=3,
                 help="""
                     The reference period is used to calculate the historical average of
-                    the daily temperatures. The average is then used to compare the daily
-                    temperatures of the selected year. 1961-1990 is currently considered
+                    the daily values. The average is then used to compare the daily
+                    values of the selected year. 1961-1990 is currently considered
                     the best "long-term climate change assessment" by the World Meteorological
                     Organization (WMO).
                     """,
@@ -137,36 +138,39 @@ def build_form(method: str = "by_name") -> dict:
                 """,
         )
 
-        with st.expander("Advanced settings"):
-            metrics = {
-                "Mean temperature": {
-                    "name": "temperature_2m_mean",
-                    "title": "Mean temperatures",
-                    "subtitle": "Compared to historical daily mean temperatures",
-                    "description": "Mean Temperature",
-                },
-                "Minimum temperature": {
-                    "name": "temperature_2m_min",
-                    "title": "Minimum temperatures",
-                    "subtitle": "Compared to average of historical daily minimum temperatures",
-                    "description": "Average of minimum temperatures",
-                },
-                "Maximum temperature": {
-                    "name": "temperature_2m_max",
-                    "title": "Maximum temperatures",
-                    "subtitle": "Compared to average of historical daily maximum temperatures",
-                    "description": "Average of maximum temperatures",
-                },
-            }
-            selected_metric = st.selectbox("Metric:", list(metrics.keys()))
-            form_values["metric"] = metrics[selected_metric]
+        # Selector for metric
+        metrics = {
+            "Mean temperature": {
+                "name": "temperature_mean",
+                "data": "temperature_2m_mean",
+            },
+            "Minimum temperature": {
+                "name": "temperature_min",
+                "data": "temperature_2m_min",
+            },
+            "Maximum temperature": {
+                "name": "temperature_max",
+                "data": "temperature_2m_max",
+            },
+            "Precipitation (Rolling average)": {
+                "name": "precipitation_rolling",
+                "data": "precipitation_sum",
+            },
+            "Precipitation (Cumulated)": {
+                "name": "precipitation_cum",
+                "data": "precipitation_sum",
+            },
+        }
+        selected_metric = st.selectbox("Metric:", list(metrics.keys()))
+        form_values["metric"] = metrics[selected_metric]
 
+        with st.expander("Advanced settings"):
             # Selection for unit system
             units = {
-                "Metric System (°C)": "metric",
-                "Imperial System (°F)": "imperial",
+                "Metric System (°C, mm)": "metric",
+                "Imperial System (°F, In)": "imperial",
             }
-            selected_units = st.selectbox("Temperature units:", list(units.keys()))
+            selected_units = st.selectbox("Units:", list(units.keys()))
             form_values["units"] = units[selected_units]
 
             # Slider to apply LOWESS smoothing
@@ -282,17 +286,36 @@ def process_form(form_values: dict) -> dict:
             "polynomial": degrees[form_values["smooth"]],
         }
 
+    # Define units to be used
+    units = {
+        "metric": {"temperature": "°C", "precipitation": "mm"},
+        "imperial": {"temperature": "°F", "precipitation": "In"},
+    }
+
+    # Set unit for temperature graphs
+    if "temperature" in form_values["metric"]["name"]:
+        form_values["metric"]["unit"] = units[form_values["units"]]["temperature"]
+
+    # Set unit for precipitation graphs
+    if "precipitation" in form_values["metric"]["name"]:
+        form_values["metric"]["unit"] = units[form_values["units"]]["precipitation"]
+
     # Setting for alternating background colors for months
     form_values["alternate_months"] = {"apply": form_values["alternate_months"]}
 
     return form_values
 
 
+@st.cache_data(show_spinner=False, ttl="1h")
 def download_data(inputs: dict) -> pd.DataFrame():
     """
     Download data from open-meteo.com.
     """
     if not isinstance(inputs, dict):
+        return None
+
+    # Make sure lat/lon values are set
+    if [x for x in (inputs["lat"], inputs["lon"]) if x is None]:
         return None
 
     url = (
@@ -316,7 +339,7 @@ def download_data(inputs: dict) -> pd.DataFrame():
             inputs["lon"],
             year=inputs["year"],
             reference_period=inputs["ref_period"],
-            metric=inputs["metric"]["name"],
+            metric=inputs["metric"]["data"],
             units=inputs["units"],
         )
 
@@ -360,7 +383,7 @@ def create_graph(data: pd.DataFrame, inputs: dict) -> plt.Figure:
 
 
 # Set page title
-st.set_page_config(page_title="Historical Temperature Graph", layout="wide")
+st.set_page_config(page_title="Historical Meteo Graphs", layout="wide")
 
 # Include custom CSS
 with open("style.css", encoding="utf-8") as css:
@@ -371,7 +394,7 @@ col1, col2 = st.columns([1, 3])
 with col1:
     # Set page title
     st.markdown(
-        "<h3 style='padding-top:0;'>Historical Temperature Graph</h2>",
+        "<h3 style='padding-top:0;'>Historical Meteo Graphs</h2>",
         unsafe_allow_html=True,
     )
 

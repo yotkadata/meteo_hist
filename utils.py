@@ -15,7 +15,6 @@ import numpy as np
 import pandas as pd
 import requests
 import seaborn as sns
-import streamlit as st
 from matplotlib import ticker
 from pydantic.v1.utils import deep_update
 from unidecode import unidecode
@@ -41,13 +40,11 @@ def calc_dates(ref_period: tuple[int, int], year: int) -> tuple[str, str]:
     return date_start, date_end
 
 
-@st.cache_data(show_spinner=False)
 def get_data(
     lat: float,
     lon: float,
     year: int = None,
     reference_period: str = "1991-2020",
-    timezone: str = "Europe/Berlin",
     metric="temperature_2m_mean",
     units="metric",
 ) -> pd.DataFrame:
@@ -59,16 +56,22 @@ def get_data(
 
     start_date, end_date = calc_dates(reference_period, year)
 
-    # Set unit to be used
-    unit_temperature = "fahrenheit" if units == "imperial" else "celsius"
-
     url = (
         "https://archive-api.open-meteo.com/v1/archive?"
         f"latitude={lat}&longitude={lon}&"
         f"start_date={start_date}&end_date={end_date}&"
-        f"daily={metric}&timezone={timezone}"
-        f"&temperature_unit={unit_temperature}"
+        f"daily={metric}&timezone=auto"
     )
+
+    # Set unit to be used
+    unit_temperature = "fahrenheit" if units == "imperial" else "celsius"
+    unit_precipitation = "inch" if units == "imperial" else "mm"
+
+    # Add unit to URL
+    if "temperature" in metric:
+        url = url + f"&temperature_unit={unit_temperature}"
+    if "precipitation" in metric:
+        url = url + f"&precipitation_unit={unit_precipitation}"
 
     # Get the data from the API
     data = requests.get(url, timeout=30)
@@ -87,7 +90,6 @@ def get_data(
     return df_t
 
 
-@st.cache_data(show_spinner=False)
 def get_lat_lon(query: str, lang: str = "en") -> dict:
     """
     Get latitude and longitude from a query string.
@@ -100,33 +102,40 @@ def get_lat_lon(query: str, lang: str = "en") -> dict:
 
     # Get the data from the API
     location = requests.get(url, timeout=30)
-
     location = location.json()
 
-    result = {}
-    for i, loc in enumerate(location):
-        if "lat" in loc:
-            keys = ["city", "town", "village", "hamlet", "suburb"]
-            location_name = loc["display_name"]
+    keys = [
+        "city",
+        "town",
+        "village",
+        "hamlet",
+        "suburb",
+        "municipality",
+        "district",
+        "county",
+        "state",
+    ]
 
-            for key in keys:
-                if key in loc["address"]:
-                    location_name = (
-                        f"{loc['address'][key]}, {loc['address']['country']}"
-                    )
-                    break
+    types = ["city", "administrative", "town", "village"]
 
-            result[i] = {
-                "display_name": loc["display_name"],
-                "location_name": location_name,
-                "lat": loc["lat"],
-                "lon": loc["lon"],
-            }
+    result = []
+
+    for key in keys:
+        for loc in location:
+            if loc["type"] in types and key in loc["address"]:
+                result.append(
+                    {
+                        "display_name": loc["display_name"],
+                        "location_name": f"{loc['address'][key]}, {loc['address']['country']}",
+                        "lat": loc["lat"],
+                        "lon": loc["lon"],
+                    }
+                )
+                break
 
     return result
 
 
-@st.cache_data(show_spinner=False)
 def get_location(coords: tuple[float, float], lang: str = "en") -> str:
     """
     Get location name from latitude and longitude.
@@ -228,19 +237,13 @@ class MeteoHist:
                 "xtick.labelsize": 11,
                 "ytick.labelsize": 11,
             },
-            "yaxis_label": "Temperature (°C)",
-            "colors": {
-                "fill_percentiles": "#f8f8f8",
-                "cmap_above": "YlOrRd",
-                "cmap_below": "YlGnBu_r",
-            },
             "paths": {
                 "output": "output",
             },
             "num_files_to_keep": 100,
             "highlight_max": 1,
-            "max_annotation": 0,
             "peak_alpha": True,
+            "peak_method": "mean",
             "smooth": {
                 "apply": True,
                 "bandwidth": 0.1,
@@ -251,13 +254,19 @@ class MeteoHist:
             "lon": None,
             "location_name": None,
             "metric": {
-                "name": "temperature_2m_mean",
+                "name": "temperature_mean",
+                "data": "temperature_2m_mean",
                 "title": "Mean temperatures",
                 "subtitle": "Compared to historical daily mean temperatures",
                 "description": "Mean Temperature",
+                "unit": "°C",
+                "yaxis_label": "Temperature",
+                "colors": {
+                    "fill_percentiles": "#f8f8f8",
+                    "cmap_above": "YlOrRd",
+                    "cmap_below": "YlGnBu_r",
+                },
             },
-            "units": "metric",
-            "unit_temperature": "°C",
             "alternate_months": {
                 "apply": True,
                 "odd_color": "#fff",
@@ -267,19 +276,62 @@ class MeteoHist:
             },
         }
 
+        # Define default values by metric
+        defaults_by_metric = {
+            "temperature_min": {
+                "name": "temperature_min",
+                "data": "temperature_2m_min",
+                "title": "Minimum temperatures",
+                "subtitle": "Compared to average of historical daily minimum temperatures",
+                "description": "Average of minimum temperatures",
+            },
+            "temperature_max": {
+                "name": "temperature_max",
+                "data": "temperature_2m_max",
+                "title": "Maximum temperatures",
+                "subtitle": "Compared to average of historical daily maximum temperatures",
+                "description": "Average of maximum temperatures",
+            },
+            "precipitation_rolling": {
+                "name": "precipitation_rolling",
+                "data": "precipitation_sum",
+                "title": "Precipitation",
+                "subtitle": "30-day Rolling Average compared to historical values",
+                "description": "Mean of Rolling Average",
+                "unit": "mm",
+                "yaxis_label": "Precipitation",
+                "colors": {
+                    "cmap_above": "YlGnBu",
+                    "cmap_below": "YlOrRd_r",
+                },
+            },
+            "precipitation_cum": {
+                "name": "precipitation_cum",
+                "data": "precipitation_sum",
+                "title": "Precipitation",
+                "subtitle": "Cumuluated precipitation compared to historical values",
+                "description": "Mean of cumulated Precipitation",
+                "unit": "mm",
+                "yaxis_label": "Precipitation",
+                "colors": {
+                    "cmap_above": "YlGnBu",
+                    "cmap_below": "YlOrRd_r",
+                },
+            },
+        }
+
         # Update default settings if a settings dict was provided
-        settings = (
-            deep_update(default_settings, settings)
-            if isinstance(settings, dict)
-            else default_settings
-        )
+        if isinstance(settings, dict):
+            # Get metric defaults if metric is not defined in default_settings
+            if settings["metric"]["name"] != default_settings["metric"]["name"]:
+                default_settings["metric"] = deep_update(
+                    default_settings["metric"],
+                    defaults_by_metric[settings["metric"]["name"]],
+                )
+            settings = deep_update(default_settings, settings)
+            return settings
 
-        # Adjust units if system was changed
-        if settings["units"] == "imperial":
-            settings["unit_temperature"] = "°F"
-            settings["yaxis_label"] = "Temperature (°F)"
-
-        return settings
+        return default_settings
 
     def p05(self, series: pd.Series) -> float:
         """
@@ -299,8 +351,9 @@ class MeteoHist:
         """
         df_f = df_t.copy()
 
-        # Add column with day of year
+        # Add columns with day of year and year
         df_f["dayofyear"] = df_f["date"].dt.dayofyear
+        df_f["year"] = df_f["date"].dt.year
 
         # Remove all Feb 29 rows to get rid of leap days
         df_f = df_f[
@@ -315,6 +368,14 @@ class MeteoHist:
 
         # Reset index
         df_f.reset_index(drop=True, inplace=True)
+
+        # For rolling precipitation, change values to rolling average
+        if self.settings["metric"]["name"] == "precipitation_rolling":
+            df_f["value"] = df_f["value"].rolling(window=30, min_periods=30).mean()
+
+        # For cumulated precipitation, change values to cumulated sum for each year
+        if self.settings["metric"]["name"] == "precipitation_cum":
+            df_f["value"] = df_f.groupby(["year"])["value"].cumsum()
 
         # Get last available date and save it
         self.last_date = (
@@ -363,6 +424,10 @@ class MeteoHist:
             axis=1,
         )
 
+        # Convert to dtypes to numeric to avoid errors when all values are None
+        for position in ["above", "below"]:
+            df_g[f"{year}_{position}"] = pd.to_numeric(df_g[f"{year}_{position}"])
+
         # Add column that holds the difference between the year's value and the mean
         df_g[f"{year}_diff"] = df_g[f"{year}"] - df_g["mean"]
 
@@ -381,23 +446,58 @@ class MeteoHist:
         """
         Calculate the y-axis limits for the plot.
         """
-        # Get minimums of year's mean and 5th percentile
-        minimum = self.df_t[[f"{self.year}", "p05"]].min(axis=1).min()
-        # Get next integer multiple of 2
-        # (0.1 subtracted for edge case where minimum is a multiple of 2)
-        minimum = int(np.floor((minimum - 0.1) / 2)) * 2
+
+        # If metric is precipitation, set minimum to zero
+        if self.settings["metric"]["data"] == "precipitation_sum":
+            minimum = 0
+        else:
+            # Get minimums of year's mean and 5th percentile
+            minimum = self.df_t[[f"{self.year}", "p05"]].min(axis=1).min()
+            # Subtract 5%
+            minimum -= abs(minimum) * 0.05
 
         # Get maximum of year's mean and 95th percentile
         maximum = self.df_t[[f"{self.year}", "p95"]].max(axis=1).max()
-        # Get next integer multiple of 2
-        # (0.1 added for edge case where maximum is a multiple of 2)
-        maximum = int(np.ceil((maximum + 0.1) / 2)) * 2
+        # Add 5%
+        maximum += abs(maximum) * 0.05
 
-        # Raise maximum if annotation is higher
-        if self.settings["max_annotation"] > maximum:
-            maximum = int(np.ceil((self.settings["max_annotation"] + 0.1) / 2)) * 2
+        # Make room for annotation in rolling precipitation graphs
+        if self.settings["metric"]["name"] == "precipitation_rolling":
+            maximum += abs(maximum) * 0.2
 
         return minimum, maximum
+
+    def get_min_max(
+        self, period: tuple[int, int], which: str = "max", metric: str = "all"
+    ) -> tuple[float, float]:
+        """
+        Get minimum or maximum value over a time period.
+
+        Parameters
+        ----------
+        period: tuple of ints
+            First and last day of the period (as day_of_year from 1 to 365).
+        which: str
+            Which value to return, min or max.
+        metric: str
+            Metric to get min/max value from. By default "all": min/max values of all metrics.
+            Possible values: all, p05, mean, p95, year
+        """
+
+        if metric == "year":
+            metrics = [f"{self.year}"]
+        elif metric in ["p05", "mean", "p95"]:
+            metrics = [metric]
+        else:
+            metrics = ["p05", "mean", "p95", f"{self.year}"]
+
+        df_t = self.df_t[self.df_t["dayofyear"].between(period[0], period[1])][metrics]
+
+        # Return minimum or maximum value
+        if which == "min":
+            return df_t.min(axis=1).min()
+
+        return df_t.max(axis=1).max()
 
     def set_plot_styles(self):
         """
@@ -422,7 +522,9 @@ class MeteoHist:
         axes.spines["left"].set_visible(False)
 
         # Add y-axis label
-        axes.set_ylabel(self.settings["yaxis_label"])
+        axes.set_ylabel(
+            f"{self.settings['metric']['yaxis_label']} ({self.settings['metric']['unit']})"
+        )
 
         # Add horizontal grid lines to the plot
         axes.grid(axis="y", color="0.9", linestyle="-", linewidth=1)
@@ -444,6 +546,11 @@ class MeteoHist:
             tick.tick1line.set_markersize(0)
             tick.tick2line.set_markersize(0)
             tick.label1.set_horizontalalignment("center")
+
+        # Format y-axis labels to use int
+        current_values = plt.gca().get_yticks()
+        if max(current_values) > 10:
+            plt.gca().set_yticklabels([f"{x:.0f}" for x in current_values])
 
     def alternate_months(self, axes):
         """
@@ -528,7 +635,7 @@ class MeteoHist:
             self.df_t.index,
             self.df_t[f"p{percentiles[0]}"],
             self.df_t[f"p{percentiles[1]}"],
-            color=self.settings["colors"]["fill_percentiles"],
+            color=self.settings["metric"]["colors"]["fill_percentiles"],
         )
 
         for percentile in percentiles:
@@ -556,7 +663,53 @@ class MeteoHist:
         """
         Add annotations to the plot to explain the data.
         """
-        minimum, _ = self.get_y_limits()
+        y_min, y_max = self.get_y_limits()
+
+        if self.settings["metric"]["name"] == "precipitation_cum":
+            # Position arrow in mid March
+            arrow_xy = (
+                int(365 / 3.5 - 30),
+                self.df_t["mean"].iloc[int(365 / 3.5 - 30)],
+            )
+
+            # Position text in mid Febuary / between max and total max
+            text_xy = (
+                int(365 / 12 * 1.5),
+                (self.df_t["p95"].iloc[int(365 / 24)] + y_max) / 2,
+            )
+            text_ha = "center"
+            text_va = "center"
+        elif self.settings["metric"]["name"] == "precipitation_rolling":
+            # Position arrow in ~March
+            arrow_xy = (
+                int(365 / 3.5 - 30),
+                self.df_t["mean"].iloc[int(365 / 3.5 - 30)],
+            )
+
+            # Position text in January between top and maximum value
+            # Get maximum values between Jan and Mar
+            max_value = self.get_min_max((1, 90))
+            text_xy = (
+                int(365 / 12),
+                (y_max + max_value) / 2,
+            )
+            text_ha = "center"
+            text_va = "center"
+
+        else:
+            # Position arrow to the left of the annotation
+            arrow_xy = (
+                int(365 / 3.5 - 30),
+                self.df_t["mean"].iloc[int(365 / 3.5 - 30)],
+            )
+
+            # Position text in ~April / between p05 line and minimum
+            text_xy = (
+                int(365 / 3.5),
+                (self.df_t["p05"].iloc[int(365 / 3.5)] + y_min) / 2,
+            )
+            text_ha = "center"
+            text_va = "center"
 
         # Add annotation for mean line, with arrow pointing to the line
         axes.annotate(
@@ -564,44 +717,89 @@ class MeteoHist:
                 f"{self.settings['metric']['description']}\n"
                 f"{self.reference_period[0]}-{self.reference_period[1]}"
             ),
-            # Position arrow to the left of the annotation
-            xy=(
-                int(365 / 3.5 - 30),
-                self.df_t["mean"].iloc[int(365 / 3.5 - 30)],
-            ),
-            # Position text in ~April / between p05 line and minimum
-            xytext=(
-                int(365 / 3.5),
-                (self.df_t["p05"].iloc[int(365 / 3.5)] + minimum) / 2,
-            ),
+            xy=arrow_xy,
+            xytext=text_xy,
             arrowprops={
                 "arrowstyle": "-",
                 "facecolor": "black",
                 "edgecolor": "black",
                 "shrinkB": 0,  # Remove distance to mean line
             },
-            horizontalalignment="center",
-            verticalalignment="center",
+            horizontalalignment=text_ha,
+            verticalalignment=text_va,
             color="black",
             zorder=10,
         )
 
-        # Get value in the middle between p05 and mean
-        arrow_point = (
-            self.df_t["p05"].iloc[int(365 / 12 * 10)]
-            + self.df_t["mean"].iloc[int(365 / 12 * 10)]
-        ) / 2
+        if self.settings["metric"]["name"] == "precipitation_cum":
+            # Position arrow in September, inside p05 area
+            x_pos = int(365 / 12 * 9)
+            arrow_xy = (
+                x_pos,
+                (
+                    self.df_t["p05"].iloc[x_pos]
+                    + (
+                        (self.df_t["mean"].iloc[x_pos] - self.df_t["p05"].iloc[x_pos])
+                        / 6
+                    )
+                ),
+            )
+
+            # Position text between p05 and zero
+            text_xy = (
+                int(365 / 12 * 10.5),
+                (self.df_t["p05"].iloc[int(365 / 12 * 8)] + y_min) / 2,
+            )
+            text_ha = "center"
+            text_va = "center"
+
+        elif self.settings["metric"]["name"] == "precipitation_rolling":
+            # Position arrow in September, inside p95 area
+            x_pos = int(365 / 12 * 9.5)
+            arrow_xy = (
+                x_pos,
+                (
+                    self.df_t["p95"].iloc[x_pos]
+                    - (
+                        (self.df_t["p95"].iloc[x_pos] - self.df_t["mean"].iloc[x_pos])
+                        / 6
+                    )
+                ),
+            )
+
+            # Position text (almost) at the top
+            # Get maximum values between Oct and Dec
+            max_value = self.get_min_max((274, 365))
+            text_xy = (
+                int(365 / 12 * 10.5),
+                (y_max + max_value) / 2,
+            )
+            text_ha = "center"
+            text_va = "center"
+        else:
+            # Position arrow in October, in the middle between p05 and mean
+            arrow_xy = (
+                int(365 / 12 * 10),
+                (
+                    self.df_t["p05"].iloc[int(365 / 12 * 10)]
+                    + self.df_t["mean"].iloc[int(365 / 12 * 10)]
+                )
+                / 2,
+            )
+
+            # Position text (almost) on the bottom
+            text_xy = (int(365 / 12 * 9), y_min + (abs(y_min) * 0.05))
+            text_ha = "center"
+            text_va = "bottom"
 
         # Add annotation for area between p05 and p95
         axes.annotate(
-            "90% of temperatures in reference\nperiod fall within the gray area",
-            # Position arrow in October
-            xy=(int(365 / 12 * 10), arrow_point),
-            # Position text (almost) on the bottom
-            xytext=(int(365 / 12 * 9), minimum * 1.02),
+            "90% of reference period\nvalues fall within the gray area",
+            xy=arrow_xy,
+            xytext=text_xy,
             arrowprops={"arrowstyle": "-", "facecolor": "black", "edgecolor": "black"},
-            horizontalalignment="center",
-            verticalalignment="bottom",
+            horizontalalignment=text_ha,
+            verticalalignment=text_va,
             color="black",
             zorder=10,
         )
@@ -672,6 +870,7 @@ class MeteoHist:
                 if self.settings["peak_alpha"]
                 else 1
             )
+
             # Plot area between mean and year's value
             axes.fill_between(
                 self.df_t.index[i : i + 2],
@@ -716,7 +915,7 @@ class MeteoHist:
                 zorder=3,
             )
             axes.annotate(
-                f"+{df_max[f'{self.year}_diff'].values[i]:.1f}{self.settings['unit_temperature']}",
+                f"+{df_max[f'{self.year}_diff'].values[i]:.1f}{self.settings['metric']['unit']}",
                 xy=(
                     df_max.index[i],
                     df_max[f"{self.year}_above"].values[i],
@@ -727,9 +926,6 @@ class MeteoHist:
                 horizontalalignment="center",
                 verticalalignment="bottom",
             )
-
-        # Update the maximum annotation in the settings
-        self.settings["max_annotation"] = df_max[f"{self.year}_above"].max() + 1
 
     def clean_output_dir(self, num_files_to_keep: int = None) -> None:
         """
@@ -760,7 +956,7 @@ class MeteoHist:
         Path(self.settings["paths"]["output"]).mkdir(parents=True, exist_ok=True)
 
         file_name = (
-            f"{self.settings['location_name']}-{self.settings['metric']['title']}-{self.year}_"
+            f"{self.settings['location_name']}-{self.settings['metric']['name']}-{self.year}_"
             f"ref-{self.reference_period[0]}-{self.reference_period[1]}.png"
         )
 
@@ -811,10 +1007,14 @@ class MeteoHist:
         self.plot_percentile_lines(axes)
 
         # Plot value above mean
-        self.plot_diff(axes, cmap=self.settings["colors"]["cmap_above"], method="above")
+        self.plot_diff(
+            axes, cmap=self.settings["metric"]["colors"]["cmap_above"], method="above"
+        )
 
         # Plot value below mean
-        self.plot_diff(axes, cmap=self.settings["colors"]["cmap_below"], method="below")
+        self.plot_diff(
+            axes, cmap=self.settings["metric"]["colors"]["cmap_below"], method="below"
+        )
 
         # Annotate maximum values
         if self.settings["highlight_max"] > 0:
@@ -857,18 +1057,27 @@ class MeteoHist:
         return fig, file_path, self.ref_nans
 
     @staticmethod
-    def show_random(dir_output="output"):
+    def show_random(file_dir: str = None):
         """
         Show a random plot.
         """
-        # Specify the directory
-        dir_output = Path(dir_output)
 
-        # Get all PNG files in the directory
-        files = list(dir_output.glob("*.png"))
+        # Specify directory paths
+        if file_dir is None:
+            file_dirs = [Path("examples"), Path("output")]
+        else:
+            file_dirs = [Path(file_dir)]
 
-        if len(files) > 0:
+        file_paths = []
+
+        for directory in file_dirs:
+            # Get all PNG files in the directory and add them to file_paths
+            file_paths += list(directory.glob("*.png"))
+
+        if len(file_paths) > 0:
             # Choose a random file
-            file = np.random.choice(files)
+            file = np.random.choice(file_paths)
 
             return file.as_posix()
+
+        return None
