@@ -43,6 +43,29 @@ Available metrics are:
 - **Peak method:** Method to determine the peaks. Either the difference to the historical mean (default) or the difference to the 95 percentile. The percentile method focuses more on extreme events, while the mean method focuses more on the difference to the historical average.
 - **Emphasize peaks:** If checked, peaks that leave the gray area between the 5 and 95 percentile will be highlighted more.
 
+### Examples
+
+<p float="left">
+  <a href="https://github.com/yotkadata/meteo_hist/blob/main/examples/duisburg-germany-temperature_max-2019_ref-1961-1990.png">
+    <img src="https://github.com/yotkadata/meteo_hist/blob/main/examples/duisburg-germany-temperature_max-2019_ref-1961-1990.png?raw=true" width="250" />
+  </a>
+  <a href="https://github.com/yotkadata/meteo_hist/blob/main/examples/bad-neuenahr-ahrweiler-germany-precipitation_rolling-2021_ref-1961-1990.png">
+    <img src="https://github.com/yotkadata/meteo_hist/blob/main/examples/bad-neuenahr-ahrweiler-germany-precipitation_rolling-2021_ref-1961-1990.png?raw=true" width="250" />
+  </a>
+  <a href="https://github.com/yotkadata/meteo_hist/blob/main/examples/addis-ababa-ethiopia-temperature_mean-2022_ref-1961-1990.png">
+    <img src="https://github.com/yotkadata/meteo_hist/blob/main/examples/addis-ababa-ethiopia-temperature_mean-2022_ref-1961-1990.png?raw=true" width="250" />
+  </a>
+  <a href="https://github.com/yotkadata/meteo_hist/blob/main/examples/atlantic-ocean-temperature_mean-2023_ref-1961-1990.png">
+    <img src="https://github.com/yotkadata/meteo_hist/blob/main/examples/atlantic-ocean-temperature_mean-2023_ref-1961-1990.png?raw=true" width="250" />
+  </a>
+  <a href="https://github.com/yotkadata/meteo_hist/blob/main/examples/key-west-united-states-temperature_max-2023_ref-1961-1990.png">
+    <img src="https://github.com/yotkadata/meteo_hist/blob/main/examples/key-west-united-states-temperature_max-2023_ref-1961-1990.png?raw=true" width="250" />
+  </a>
+  <a href="https://github.com/yotkadata/meteo_hist/blob/main/examples/mumbai-india-precipitation_cum-2022_ref-1961-1990.png">
+    <img src="https://github.com/yotkadata/meteo_hist/blob/main/examples/mumbai-india-precipitation_cum-2022_ref-1961-1990.png?raw=true" width="250" />
+  </a>
+</p>
+
 ### License
 
 The app and the plots it produces are published under a [**Creative Commons license (CC by-sa-nc 4.0)**](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en).
