@@ -44,6 +44,10 @@ def get_base_url() -> str:
     Get base URL from current session.
     """
 
+    if "base_url" in st.session_state:
+        return st.session_state["base_url"]
+
+    # If not set manually, get base URL
     session = st.runtime.get_instance()._session_mgr.list_active_sessions()[0]
     base_url = urllib.parse.urlunparse(
         [session.client.request.protocol, session.client.request.host, "", "", "", ""]
@@ -200,7 +204,7 @@ def create_share_url(params: dict) -> str:
     if "alternate_months" in params.keys():
         params["alternate_months"] = str(params["alternate_months"]).lower()
 
-    return f"{get_base_url()}/?{urllib.parse.urlencode(params)}"
+    return f"{get_base_url()}?{urllib.parse.urlencode(params)}"
 
 
 def build_location_by_name(location: str) -> tuple[float, float, str]:
@@ -621,6 +625,10 @@ with open("style.css", encoding="utf-8") as css:
 # Define default values for the form
 if "form_defaults" not in st.session_state:
     st.session_state["form_defaults"] = get_form_defaults()
+
+# Set base URL
+if "base_url" not in st.session_state:
+    st.session_state["base_url"] = "https://yotka.org/meteo-hist/"
 
 col1, col2 = st.columns([1, 3])
 
