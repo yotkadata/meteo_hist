@@ -1535,9 +1535,9 @@ class MeteoHistInteractive(MeteoHist):
                 )
 
         # Add column with year's value
-        df_g[f"{year}"] = df_f[df_f["date"].dt.year == year][
-            ["dayofyear", "value"]
-        ].set_index("dayofyear")["value"]
+        df_g[f"{year}"] = df_f[df_f["date"].dt.year == year]["value"].reset_index(
+            drop=True
+        )
 
         # Add column with year's value above mean
         df_g[f"{year}_above"] = df_g.apply(
@@ -1917,10 +1917,10 @@ class MeteoHistInteractive(MeteoHist):
         # TODO: This makes the filled area disappear behind the canvas
         fig.data = fig.data[::-1]
 
-        # TODO: Remove
-        full_fig = fig.full_figure_for_development()
+        # # TODO: Remove
+        # full_fig = fig.full_figure_for_development()
 
-        # Save full_fig to file
+        # # Save full_fig to file
         # with open("tmp/full_fig_data.py", "w") as file:
         #     file.write(str(full_fig["data"]))
         # with open("tmp/full_fig_layout.py", "w") as file:
