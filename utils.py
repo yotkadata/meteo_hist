@@ -197,7 +197,8 @@ def get_location(coords: tuple[float, float], lang: str = "en") -> str:
 
 class MeteoHist:
     """
-    Class to create a plot of a year's meteo values compared to historical values.
+    Base class to prepare data and provide methods to create a plot of a
+    year's meteo values compared to historical values.
     """
 
     def __init__(
@@ -570,6 +571,69 @@ class MeteoHist:
 
         return df_t.max(axis=1).max()
 
+    def clean_output_dir(self, num_files_to_keep: int = None) -> None:
+        """
+        Remove old files from the output directory.
+        """
+        # If no number of files to keep is specified, use the default value
+        if num_files_to_keep is None:
+            num_files_to_keep = self.settings["num_files_to_keep"]
+
+        # Specify the directory
+        dir_output = Path(self.settings["paths"]["output"])
+
+        # Get all PNG files in the directory, ordered by creation date
+        png_files = sorted(dir_output.glob("*.png"), key=os.path.getctime, reverse=True)
+
+        # Remove all files except the newest ones
+        if len(png_files) > num_files_to_keep:
+            for file in png_files[num_files_to_keep:]:
+                os.remove(file)
+
+            print(f"Removed {len(png_files) - num_files_to_keep} old files.")
+
+    @staticmethod
+    def show_random(file_dir: str = None) -> str:
+        """
+        Show a random plot.
+        """
+
+        # Specify directory paths
+        if file_dir is None:
+            file_dirs = [Path("examples"), Path("output")]
+        else:
+            file_dirs = [Path(file_dir)]
+
+        file_paths = []
+
+        for directory in file_dirs:
+            # Get all PNG files in the directory and add them to file_paths
+            file_paths += list(directory.glob("*.png"))
+
+        if len(file_paths) > 0:
+            # Choose a random file
+            file = np.random.choice(file_paths)
+
+            return file.as_posix()
+
+        return None
+
+
+class MeteoHistStatic(MeteoHist):
+    """
+    Class to create a static plot of a year's meteo values compared to historical values.
+    """
+
+    def __init__(
+        self,
+        df_t: pd.DataFrame,
+        year: int = None,
+        reference_period: tuple[int, int] = (1961, 1990),
+        settings: dict = None,
+    ):
+        # Call the base class constructor using super()
+        super().__init__(df_t, year, reference_period, settings)
+
     def set_plot_styles(self):
         """
         Set the plot styles.
@@ -601,7 +665,7 @@ class MeteoHist:
         axes.grid(axis="y", color="0.9", linestyle="-", linewidth=1)
 
         # Set y-axis limits
-        minimum, maximum = self.get_y_limits()
+        minimum, maximum = super().get_y_limits()
         axes.set_ylim(minimum, maximum)
 
         # Change x-axis labels to display month names instead of numbers
@@ -759,7 +823,7 @@ class MeteoHist:
 
             # Position text in January between top and maximum value
             # Get maximum values between Jan and Mar
-            max_value = self.get_min_max((1, 90))
+            max_value = super().get_min_max((1, 90))
             text_xy = (
                 int(365 / 12),
                 (y_max + max_value) / 2,
@@ -840,7 +904,7 @@ class MeteoHist:
 
             # Position text (almost) at the top
             # Get maximum values between Oct and Dec
-            max_value = self.get_min_max((274, 365))
+            max_value = super().get_min_max((274, 365))
             text_xy = (
                 int(365 / 12 * 10.5),
                 (y_max + max_value) / 2,
@@ -998,57 +1062,6 @@ class MeteoHist:
                 verticalalignment="bottom",
             )
 
-    def clean_output_dir(self, num_files_to_keep: int = None) -> None:
-        """
-        Remove old files from the output directory.
-        """
-        # If no number of files to keep is specified, use the default value
-        if num_files_to_keep is None:
-            num_files_to_keep = self.settings["num_files_to_keep"]
-
-        # Specify the directory
-        dir_output = Path(self.settings["paths"]["output"])
-
-        # Get all PNG files in the directory, ordered by creation date
-        png_files = sorted(dir_output.glob("*.png"), key=os.path.getctime, reverse=True)
-
-        # Remove all files except the newest ones
-        if len(png_files) > num_files_to_keep:
-            for file in png_files[num_files_to_keep:]:
-                os.remove(file)
-
-            print(f"Removed {len(png_files) - num_files_to_keep} old files.")
-
-    def save_plot_to_file(self, fig: plt.Figure) -> None:
-        """
-        Save the plot to a file.
-        """
-        # Make sure the output directory exists
-        Path(self.settings["paths"]["output"]).mkdir(parents=True, exist_ok=True)
-
-        file_name = (
-            f"{self.settings['location_name']}-{self.settings['metric']['name']}-{self.year}_"
-            f"ref-{self.reference_period[0]}-{self.reference_period[1]}.png"
-        )
-
-        # Convert special characters to ASCII, make lowercase, and replace spaces with dashes
-        file_name = unidecode(file_name).lower().replace(" ", "-")
-
-        # Define valid characters and remove any character not in valid_chars
-        valid_chars = f"-_.(){string.ascii_letters}{string.digits}"
-        file_name = "".join(c for c in file_name if c in valid_chars)
-
-        file_path = f"{self.settings['paths']['output']}/{file_name}"
-
-        # Save the plot
-        fig.savefig(
-            file_path,
-            dpi=300,
-            bbox_inches="tight",
-        )
-
-        return file_path
-
     def create_plot(self) -> tuple[plt.Figure, str, int]:
         """
         Creates the plot.
@@ -1127,28 +1140,32 @@ class MeteoHist:
 
         return fig, file_path, self.ref_nans
 
-    @staticmethod
-    def show_random(file_dir: str = None) -> str:
+    def save_plot_to_file(self, fig: plt.Figure) -> None:
         """
-        Show a random plot.
+        Save the plot to a file.
         """
+        # Make sure the output directory exists
+        Path(self.settings["paths"]["output"]).mkdir(parents=True, exist_ok=True)
 
-        # Specify directory paths
-        if file_dir is None:
-            file_dirs = [Path("examples"), Path("output")]
-        else:
-            file_dirs = [Path(file_dir)]
+        file_name = (
+            f"{self.settings['location_name']}-{self.settings['metric']['name']}-{self.year}_"
+            f"ref-{self.reference_period[0]}-{self.reference_period[1]}.png"
+        )
 
-        file_paths = []
+        # Convert special characters to ASCII, make lowercase, and replace spaces with dashes
+        file_name = unidecode(file_name).lower().replace(" ", "-")
 
-        for directory in file_dirs:
-            # Get all PNG files in the directory and add them to file_paths
-            file_paths += list(directory.glob("*.png"))
+        # Define valid characters and remove any character not in valid_chars
+        valid_chars = f"-_.(){string.ascii_letters}{string.digits}"
+        file_name = "".join(c for c in file_name if c in valid_chars)
 
-        if len(file_paths) > 0:
-            # Choose a random file
-            file = np.random.choice(file_paths)
+        file_path = f"{self.settings['paths']['output']}/{file_name}"
 
-            return file.as_posix()
+        # Save the plot
+        fig.savefig(
+            file_path,
+            dpi=300,
+            bbox_inches="tight",
+        )
 
-        return None
+        return file_path
