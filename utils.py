@@ -408,9 +408,9 @@ class MeteoHist:
                 )
 
         # Add column with year's value
-        df_g[f"{year}"] = df_f[df_f["date"].dt.year == year][
-            ["dayofyear", "value"]
-        ].set_index("dayofyear")["value"]
+        df_g[f"{year}"] = df_f[df_f["date"].dt.year == year]["value"].reset_index(
+            drop=True
+        )
 
         # Add column with year's value above mean
         df_g[f"{year}_above"] = df_g.apply(
