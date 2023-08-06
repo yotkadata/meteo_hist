@@ -598,7 +598,7 @@ def create_graph(data: pd.DataFrame, inputs: dict) -> plt.Figure:
     Create the graph.
     """
     with st.spinner("Creating graph..."):
-        plot = utils.MeteoHist(
+        plot = utils.MeteoHistStatic(
             data,
             inputs["year"],
             reference_period=inputs["ref_period"],
