@@ -1547,7 +1547,7 @@ class MeteoHistInteractive(MeteoHist):
 
         return fig
 
-    def create_plot(self) -> plt.Figure:
+    def create_plot(self) -> tuple[plt.Figure, str]:
         """
         Creates the plot.
         """
@@ -1585,6 +1585,9 @@ class MeteoHistInteractive(MeteoHist):
         # TODO: This makes the filled area disappear behind the canvas
         fig.data = fig.data[::-1]
 
+        if self.settings["save_file"]:
+            file_path = self.save_plot_to_file(fig)
+
         # # TODO: Remove
         # full_fig = fig.full_figure_for_development()
 
@@ -1594,7 +1597,7 @@ class MeteoHistInteractive(MeteoHist):
         # with open("full_fig_layout.py", "w") as file:
         #     file.write(str(full_fig["layout"]))
 
-        return fig
+        return fig, file_path
 
     def save_plot_to_file(self, fig: plt.Figure) -> None:
         """
@@ -1618,10 +1621,12 @@ class MeteoHistInteractive(MeteoHist):
         file_path = f"{self.settings['paths']['output']}/{file_name}"
 
         # Save the plot
-        fig.savefig(
+        # TODO: Adjust margins etc.
+        fig.write_image(
             file_path,
-            dpi=300,
-            bbox_inches="tight",
+            width=1000,
+            height=600,
+            scale=2,
         )
 
         return file_path
