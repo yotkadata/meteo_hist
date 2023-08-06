@@ -1342,6 +1342,17 @@ class MeteoHistInteractive(MeteoHist):
             ]
         )
 
+        # Add annotations for percentile lines
+        for percentile in ["p05", "p95"]:
+            fig.add_annotation(
+                x=self.df_t["date"].iloc[-1],
+                y=self.df_t[percentile].iloc[-1],
+                text=percentile.upper(),
+                showarrow=False,
+                xanchor="left",
+                yanchor="middle",
+            )
+
         return fig
 
     def plot_mean(self, fig: go.Figure) -> go.Figure:
@@ -1562,9 +1573,9 @@ class MeteoHistInteractive(MeteoHist):
         # full_fig = fig.full_figure_for_development()
 
         # # Save full_fig to file
-        # with open("tmp/full_fig_data.py", "w") as file:
+        # with open("full_fig_data.py", "w") as file:
         #     file.write(str(full_fig["data"]))
-        # with open("tmp/full_fig_layout.py", "w") as file:
+        # with open("full_fig_layout.py", "w") as file:
         #     file.write(str(full_fig["layout"]))
 
         return fig
