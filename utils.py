@@ -1465,7 +1465,7 @@ class MeteoHistInteractive(MeteoHist):
             xref="paper",
             yref="paper",
             x=1,
-            y=-0.11,
+            y=-0.14,
             xanchor="right",
             showarrow=False,
             text="<b>Data:</b> open-meteo.com, OSM, "
@@ -1493,7 +1493,7 @@ class MeteoHistInteractive(MeteoHist):
             xref="paper",
             yref="paper",
             x=0,
-            y=-0.11,
+            y=-0.14,
             xanchor="left",
             showarrow=False,
             text=f"lat: {self.settings['lat']}, lon: {self.settings['lon']}{last_date_text}",
@@ -1519,10 +1519,13 @@ class MeteoHistInteractive(MeteoHist):
                     size=32,
                     color="#1f1f1f",
                 ),
-                x=1,
+                x=0.98,
+                y=0.93,
+                xanchor="right",
+                yanchor="top",
             ),
             template="plotly_white",
-            margin=dict(b=60, l=40, r=0),
+            margin=dict(b=70, l=60, r=20, pad=10),
             hovermode="x",
             bargap=0,
             width=1000,
@@ -1606,7 +1609,6 @@ class MeteoHistInteractive(MeteoHist):
         file_path = super().create_file_path()
 
         # Save the plot
-        # TODO: Adjust margins etc.
         fig.write_image(
             file_path,
             width=1000,
