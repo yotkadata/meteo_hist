@@ -44,7 +44,7 @@ def get_data(
     lat: float,
     lon: float,
     year: int = None,
-    reference_period: str = "1991-2020",
+    reference_period: str = "1961-1990",
     metric="temperature_2m_mean",
     units="metric",
 ) -> pd.DataFrame:
