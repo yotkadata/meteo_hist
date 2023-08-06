@@ -335,18 +335,6 @@ class MeteoHist:
 
         return default_settings
 
-    def p05(self, series: pd.Series) -> float:
-        """
-        Calculates the 5th percentile of a pandas series.
-        """
-        return series.quantile(0.05)
-
-    def p95(self, series: pd.Series) -> float:
-        """
-        Calculates the 95th percentile of a pandas series.
-        """
-        return series.quantile(0.95)
-
     def normalize_diff(self, series: pd.Series, fill_na: bool = True) -> pd.Series:
         """
         Normalize a series to the range [0, 1].
@@ -413,6 +401,19 @@ class MeteoHist:
         """
         Transforms the dataframe to be used for plotting.
         """
+
+        def p05(series: pd.Series) -> float:
+            """
+            Calculates the 5th percentile of a pandas series.
+            """
+            return series.quantile(0.05)
+
+        def p95(series: pd.Series) -> float:
+            """
+            Calculates the 95th percentile of a pandas series.
+            """
+            return series.quantile(0.95)
+
         df_f = df_t.copy()
 
         # Add columns with day of year and year
@@ -457,7 +458,7 @@ class MeteoHist:
         # Group by day of year and calculate min, 5th percentile, mean, 95th percentile, and max
         df_g = (
             df_g.groupby("dayofyear")["value"]
-            .agg(["min", self.p05, "mean", self.p95, "max"])
+            .agg(["min", p05, "mean", p95, "max"])
             .reset_index()
         )
 
@@ -622,6 +623,7 @@ class MeteoHist:
 class MeteoHistStatic(MeteoHist):
     """
     Class to create a static plot of a year's meteo values compared to historical values.
+    Inherits from MeteoHist, which does the data processing.
     """
 
     def __init__(
