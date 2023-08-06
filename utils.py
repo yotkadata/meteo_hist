@@ -13,15 +13,13 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import plotly.graph_objects as go
 import requests
 import seaborn as sns
 from matplotlib import ticker
 from pydantic.v1.utils import deep_update
 from statsmodels.nonparametric.smoothers_lowess import lowess
 from unidecode import unidecode
-import plotly.express as px
-import plotly.graph_objects as go
-from calendar import isleap
 
 
 def calc_dates(ref_period: tuple[int, int], year: int) -> tuple[str, str]:
@@ -1456,7 +1454,7 @@ class MeteoHistInteractive(MeteoHist):
 
         return fig
 
-    def add_data_info(self, fig):
+    def add_data_info(self, fig: go.Figure) -> go.Figure:
         """
         Add coordinates and last avalable date to the plot.
         """
