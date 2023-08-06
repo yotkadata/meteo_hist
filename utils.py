@@ -19,6 +19,9 @@ from matplotlib import ticker
 from pydantic.v1.utils import deep_update
 from statsmodels.nonparametric.smoothers_lowess import lowess
 from unidecode import unidecode
+import plotly.express as px
+import plotly.graph_objects as go
+from calendar import isleap
 
 
 def calc_dates(ref_period: tuple[int, int], year: int) -> tuple[str, str]:
@@ -1224,3 +1227,780 @@ class MeteoHistStatic(MeteoHist):
         )
 
         return file_path
+
+
+class MeteoHistInteractive(MeteoHist):
+    """
+    Class to create an interactive plot of a year's meteo values compared to historical values.
+    Inherits from MeteoHist, which does the data processing.
+    """
+
+    def __init__(
+        self,
+        df_t: pd.DataFrame,
+        year: int,
+        reference_period: tuple = (1961, 1990),
+        settings: dict = None,
+    ):
+        """
+        Parameters
+        ----------
+        df_t : pd.DataFrame
+            Dataframe with metric data.
+        year : int
+            Year to plot.
+        reference_period : tuple of ints
+            Reference period to compare the data, by default (1991, 2020).
+        settings : dict, optional
+            Settings dictionary, by default None.
+        """
+        self.settings = self.update_settings(settings)
+        self.df_t = self.transform_df(df_t, year, reference_period)
+        self.year = year
+        self.reference_period = reference_period
+
+    def update_settings(self, settings: dict) -> None:
+        """
+        Update the settings dictionary.
+        """
+        default_settings = {
+            "font": {
+                "family": "sans-serif",
+                "font": "Lato",
+                "default_size": 11,
+                "axes.labelsize": 11,
+                "xtick.labelsize": 11,
+                "ytick.labelsize": 11,
+            },
+            "paths": {
+                "output": "output",
+            },
+            "num_files_to_keep": 100,
+            "highlight_max": 1,
+            "peak_alpha": True,
+            "peak_method": "mean",
+            "smooth": {
+                "apply": True,
+                "bandwidth": 0.1,
+                "polynomial": 1,
+            },
+            "save_file": True,
+            "lat": None,
+            "lon": None,
+            "location_name": None,
+            "metric": {
+                "name": "temperature_mean",
+                "data": "temperature_2m_mean",
+                "title": "Mean temperatures",
+                "subtitle": "Compared to historical daily mean temperatures",
+                "description": "Mean Temperature",
+                "unit": "°C",
+                "yaxis_label": "Temperature",
+                "colors": {
+                    "fill_percentiles": "#f8f8f8",
+                    "cmap_above": "YlOrRd",
+                    "cmap_below": "YlGnBu_r",
+                },
+            },
+            "alternate_months": {
+                "apply": True,
+                "odd_color": "#fff",
+                "odd_alpha": 0,
+                "even_color": "#f8f8f8",
+                "even_alpha": 0.3,
+            },
+        }
+
+        # Define default values by metric
+        defaults_by_metric = {
+            "temperature_min": {
+                "name": "temperature_min",
+                "data": "temperature_2m_min",
+                "title": "Minimum temperatures",
+                "subtitle": "Compared to average of historical daily minimum temperatures",
+                "description": "Average of minimum temperatures",
+            },
+            "temperature_max": {
+                "name": "temperature_max",
+                "data": "temperature_2m_max",
+                "title": "Maximum temperatures",
+                "subtitle": "Compared to average of historical daily maximum temperatures",
+                "description": "Average of maximum temperatures",
+            },
+            "precipitation_rolling": {
+                "name": "precipitation_rolling",
+                "data": "precipitation_sum",
+                "title": "Precipitation",
+                "subtitle": "30-day Rolling Average compared to historical values",
+                "description": "Mean of Rolling Average",
+                "unit": "mm",
+                "yaxis_label": "Precipitation",
+                "colors": {
+                    "cmap_above": "YlGnBu",
+                    "cmap_below": "YlOrRd_r",
+                },
+            },
+            "precipitation_cum": {
+                "name": "precipitation_cum",
+                "data": "precipitation_sum",
+                "title": "Precipitation",
+                "subtitle": "Cumuluated precipitation compared to historical values",
+                "description": "Mean of cumulated Precipitation",
+                "unit": "mm",
+                "yaxis_label": "Precipitation",
+                "colors": {
+                    "cmap_above": "YlGnBu",
+                    "cmap_below": "YlOrRd_r",
+                },
+            },
+        }
+
+        # Update default settings if a settings dict was provided
+        if isinstance(settings, dict):
+            # Get metric defaults if metric is not defined in default_settings
+            if settings["metric"]["name"] != default_settings["metric"]["name"]:
+                default_settings["metric"] = deep_update(
+                    default_settings["metric"],
+                    defaults_by_metric[settings["metric"]["name"]],
+                )
+            settings = deep_update(default_settings, settings)
+            return settings
+
+        return default_settings
+
+    def p05(self, series: pd.Series) -> float:
+        """
+        Calculates the 5th percentile of a pandas series.
+        """
+        return series.quantile(0.05)
+
+    def p95(self, series: pd.Series) -> float:
+        """
+        Calculates the 95th percentile of a pandas series.
+        """
+        return series.quantile(0.95)
+
+    def normalize_diff(self, series: pd.Series, fill_na: bool = True) -> pd.Series:
+        """
+        Normalize a series to the range [0, 1].
+        Initial values below 0  result between [0, 0.5] and
+        values above 0 result between [0.5, 1].
+        Values will later be used for the colorscale of the plot.
+        """
+        series = np.array(series)
+
+        # Fill NaNs with 0
+        if fill_na:
+            series = np.nan_to_num(series)
+
+        # Masks for negative and positive values
+        negative_mask = series < 0
+        positive_mask = series > 0
+
+        series_norm = series.copy()
+
+        # Normalize negative values to [0, 0.5] using the mask
+        max_value = series_norm[negative_mask].max()
+        min_value = series_norm[negative_mask].min()
+        series_norm[negative_mask] = (
+            (series_norm[negative_mask] - min_value) / (max_value - min_value) * 0.5
+        )
+
+        # Normalize positive values to [0.5, 1] using the mask
+        max_value = series_norm[positive_mask].max()
+        min_value = series_norm[positive_mask].min()
+        series_norm[positive_mask] = (series_norm[positive_mask] - min_value) / (
+            max_value - min_value
+        ) * 0.5 + 0.5
+
+        return pd.Series(series_norm)
+
+    def dayofyear_to_date(
+        self, year: int, dayofyear: int, adj_leap: bool = False
+    ) -> dt.datetime:
+        """
+        Convert a day of the year to a date.
+
+        Parameters
+        ----------
+        year : int
+            The year of the date.
+        day_of_year : int
+            The day of the year.
+        adj_leap : bool, optional
+            Adjust for leap years if years were reduced to 365 days
+            by default False
+        """
+        # Check if year is a leap year, adjust day after Feb 28 if so
+        if adj_leap and isleap(year) and dayofyear > (31 + 28):
+            dayofyear += 1
+
+        # Calculate the date for the given day of the year
+        target_date = dt.datetime(year, 1, 1) + dt.timedelta(days=dayofyear - 1)
+
+        return target_date
+
+    def get_min_max(
+        self, period: tuple[int, int], which: str = "max", metric: str = "all"
+    ) -> tuple[float, float]:
+        """
+        Get minimum or maximum value over a time period.
+
+        Parameters
+        ----------
+        period: tuple of ints
+            First and last day of the period (as day_of_year from 1 to 365).
+        which: str
+            Which value to return, min or max.
+        metric: str
+            Metric to get min/max value from. By default "all": min/max values of all metrics.
+            Possible values: all, p05, mean, p95, year
+        """
+
+        if metric == "year":
+            metrics = [f"{self.year}"]
+        elif metric in ["p05", "mean", "p95"]:
+            metrics = [metric]
+        else:
+            metrics = ["p05", "mean", "p95", f"{self.year}"]
+
+        df_t = self.df_t[self.df_t["dayofyear"].between(period[0], period[1])][metrics]
+
+        # Return minimum or maximum value
+        if which == "min":
+            return df_t.min(axis=1).min()
+
+        return df_t.max(axis=1).max()
+
+    def transform_df(self, df_t, year, ref_period) -> pd.DataFrame:
+        """
+        Transforms the dataframe to be used for plotting.
+        """
+        df_f = df_t.copy()
+
+        # Add columns with day of year and year
+        df_f["dayofyear"] = df_f["date"].dt.dayofyear
+        df_f["year"] = df_f["date"].dt.year
+
+        # Remove all Feb 29 rows to get rid of leap days
+        df_f = df_f[
+            ~((df_f["date"].dt.month == 2) & (df_f["date"].dt.day == 29))
+        ].copy()
+
+        # Adjust "dayofyear" values for days after February 29th in leap years
+        df_f["dayofyear"] = df_f["dayofyear"].where(
+            ~((df_f["date"].dt.month > 2) & (df_f["date"].dt.is_leap_year)),
+            df_f["dayofyear"] - 1,
+        )
+
+        # Reset index
+        df_f.reset_index(drop=True, inplace=True)
+
+        # For rolling precipitation, change values to rolling average
+        if self.settings["metric"]["name"] == "precipitation_rolling":
+            df_f["value"] = df_f["value"].rolling(window=30, min_periods=30).mean()
+
+        # For cumulated precipitation, change values to cumulated sum for each year
+        if self.settings["metric"]["name"] == "precipitation_cum":
+            df_f["value"] = df_f.groupby(["year"])["value"].cumsum()
+
+        # Get last available date and save it
+        self.last_date = (
+            df_f.dropna(subset=["value"], how="all")["date"]
+            .iloc[-1]
+            .strftime("%d %b %Y")
+        )
+
+        # Filter dataframe to reference period
+        df_g = df_f[df_f["date"].dt.year.between(*ref_period)].copy()
+
+        # Count number of NaN in reference period
+        self.ref_nans = df_g["value"].isna().sum() / len(df_g) if len(df_g) > 0 else 0
+
+        # Group by day of year and calculate min, 5th percentile, mean, 95th percentile, and max
+        df_g = (
+            df_g.groupby("dayofyear")["value"]
+            .agg(["min", self.p05, "mean", self.p95, "max"])
+            .reset_index()
+        )
+
+        if self.settings["smooth"]["apply"]:
+            # Add smooting using LOWESS (locally weighted scatterplot smoothing)
+            for col in ["p05", "mean", "p95"]:
+                df_g[col] = lowess.lowess(
+                    df_g["dayofyear"],
+                    df_g[col],
+                    bandwidth=self.settings["smooth"]["bandwidth"],
+                    polynomialDegree=self.settings["smooth"]["polynomial"],
+                )
+
+        # Add column with year's value
+        df_g[f"{year}"] = df_f[df_f["date"].dt.year == year][
+            ["dayofyear", "value"]
+        ].set_index("dayofyear")["value"]
+
+        # Add column with year's value above mean
+        df_g[f"{year}_above"] = df_g.apply(
+            lambda x: x[f"{year}"] if x[f"{year}"] > x["mean"] else None,
+            axis=1,
+        )
+
+        # Add column with year's value below mean
+        df_g[f"{year}_below"] = df_g.apply(
+            lambda x: x[f"{year}"] if x[f"{year}"] < x["mean"] else None,
+            axis=1,
+        )
+
+        # Convert to dtypes to numeric to avoid errors when all values are None
+        for position in ["above", "below"]:
+            df_g[f"{year}_{position}"] = pd.to_numeric(df_g[f"{year}_{position}"])
+
+        # Add column that holds the difference between the year's value and the mean
+        df_g[f"{year}_diff"] = df_g[f"{year}"] - df_g["mean"]
+
+        if self.settings["peak_alpha"]:
+            # Add column that holds normalized difference between -1 and 1
+            df_g[f"{year}_alpha"] = df_g.apply(
+                lambda x: 1
+                if x[f"{year}"] > x["p95"] or x[f"{year}"] < x["p05"]
+                else 0.6,
+                axis=1,
+            ).fillna(0)
+
+        # Create a column with the normalized difference
+        df_g[f"{year}_diff_norm"] = self.normalize_diff(df_g[f"{year}_diff"])
+
+        # Add a column with the date
+        df_g["date"] = df_g["dayofyear"].apply(
+            lambda x: self.dayofyear_to_date(year, x, True)
+        )
+
+        return df_g
+
+    def get_y_limits(self) -> tuple[int, int]:
+        """
+        Calculate the y-axis limits for the plot.
+        """
+
+        # If metric is precipitation, set minimum to zero
+        if self.settings["metric"]["data"] == "precipitation_sum":
+            minimum = 0
+        else:
+            # Get minimums of year's mean and 5th percentile
+            minimum = self.df_t[[f"{self.year}", "p05"]].min(axis=1).min()
+            # Subtract 5%
+            minimum -= abs(minimum) * 0.05
+
+        # Get maximum of year's mean and 95th percentile
+        maximum = self.df_t[[f"{self.year}", "p95"]].max(axis=1).max()
+        # Add 5%
+        maximum += abs(maximum) * 0.05
+
+        # Make room for annotation in rolling precipitation graphs
+        if self.settings["metric"]["name"] == "precipitation_rolling":
+            maximum += abs(maximum) * 0.2
+
+        return minimum, maximum
+
+    def add_alternating_bg(self, fig: go.Figure) -> go.Figure:
+        """
+        Add alternating background color for months.
+        """
+
+        # Define dict with first and last day of each month
+        months_with_days = {
+            1: (1, 31),
+            2: (32, 59),
+            3: (60, 90),
+            4: (91, 120),
+            5: (121, 151),
+            6: (152, 181),
+            7: (182, 212),
+            8: (213, 243),
+            9: (244, 273),
+            10: (274, 304),
+            11: (305, 334),
+            12: (335, 365),
+        }
+
+        for month, days in months_with_days.items():
+            # Define background color
+            bg_color = (
+                self.settings["alternate_months"]["even_color"]
+                if (month % 2) == 0
+                else self.settings["alternate_months"]["odd_color"]
+            )
+
+            # Define background opacity
+            bg_opacity = (
+                self.settings["alternate_months"]["even_alpha"]
+                if (month % 2) == 0
+                else self.settings["alternate_months"]["odd_alpha"]
+            )
+
+            fig.add_shape(
+                type="rect",
+                yref="paper",
+                x0=self.dayofyear_to_date(self.year, days[0], True),
+                x1=self.dayofyear_to_date(self.year, days[1], True),
+                y0=0,
+                y1=1,
+                fillcolor=bg_color,
+                opacity=bg_opacity,
+                layer="below",
+                line_width=0,
+            )
+
+        return fig
+
+    def plot_percentile_lines(self, fig: go.Figure) -> go.Figure:
+        """
+        Add percentile lines and filled area to plot.
+        """
+
+        fig.add_traces(
+            [
+                # p95 trace
+                go.Scatter(
+                    x=self.df_t["date"],
+                    y=self.df_t["p95"],
+                    name="P95",
+                    line=dict(color="#000", width=1, dash="dot"),
+                    showlegend=False,
+                    hovertemplate=(
+                        "%{y:.1f}"
+                        f"{self.settings['metric']['unit']}"
+                        f"<extra><b>95th percentile {self.reference_period[0]}-{self.reference_period[1]}</b></extra>"
+                    ),
+                ),
+                # Fill area between p05 and p95 (last trace added)
+                go.Scatter(
+                    x=self.df_t["date"],
+                    y=self.df_t["p05"],
+                    fill="tonexty",
+                    fillcolor="#f8f8f8",
+                    # Make line transparent
+                    line=dict(color="rgba(0,0,0,0)"),
+                    showlegend=False,
+                    # Remove hoverinfo
+                    hoverinfo="skip",
+                ),
+                # p05 trace
+                go.Scatter(
+                    x=self.df_t["date"],
+                    y=self.df_t["p05"],
+                    name="P05",
+                    line=dict(color="#000", width=1, dash="dot"),
+                    showlegend=False,
+                    hovertemplate=(
+                        "%{y:.1f}"
+                        f"{self.settings['metric']['unit']}"
+                        f"<extra><b>5th percentile {self.reference_period[0]}-{self.reference_period[1]}</b></extra>"
+                    ),
+                ),
+            ]
+        )
+
+        return fig
+
+    def plot_mean(self, fig: go.Figure) -> go.Figure:
+        """
+        Plot the the long-term mean.
+        """
+
+        fig.add_trace(
+            go.Scatter(
+                x=self.df_t["date"],
+                y=self.df_t["mean"],
+                name="Mean",
+                line=dict(color="#000", width=2.5),
+                showlegend=False,
+                hovertemplate=(
+                    "%{y:.1f}"
+                    f"{self.settings['metric']['unit']}"
+                    f"<extra><b>Mean {self.reference_period[0]}-{self.reference_period[1]}</b></extra>"
+                ),
+            ),
+        )
+
+        return fig
+
+    def plot_diff(self, fig: go.Figure) -> go.Figure:
+        """
+        Plot the difference between the year's value and the long-term mean.
+        """
+
+        fig.add_trace(
+            go.Bar(
+                x=self.df_t["date"],
+                y=self.df_t[f"{self.year}_diff"],
+                base=self.df_t["mean"],
+                name=f"{self.year} value",
+                marker=dict(
+                    color=self.df_t[f"{self.year}_diff_norm"],
+                    colorscale="RdYlBu_r",
+                    line=dict(width=0),
+                ),
+                showlegend=False,
+                hovertemplate=(
+                    "%{y:.1f}" f"{self.settings['metric']['unit']}<extra></extra>"
+                ),
+            )
+        )
+
+        return fig
+
+    def annotate_max_values(self, axes):
+        """
+        Annotate maximum values.
+        """
+        # By default, sort by difference between year's value and mean
+        df_max = (
+            self.df_t.sort_values(f"{self.year}_diff", ascending=False)
+            .loc[: self.settings["highlight_max"]]
+            .copy()
+        )
+
+        # If peak method is percentile, sort by difference between year's value and p95
+        if self.settings["peak_method"] == "percentile":
+            df_max = self.df_t.copy()
+            df_max[f"{self.year}_diffp95"] = df_max[f"{self.year}"] - df_max["p95"]
+
+            df_max = (
+                df_max.sort_values(f"{self.year}_diffp95", ascending=False)
+                .loc[: self.settings["highlight_max"]]
+                .copy()
+            )
+
+        for i in range(self.settings["highlight_max"]):
+            axes.scatter(
+                df_max.index[i],
+                df_max[f"{self.year}_above"].values[i],
+                facecolors="none",
+                edgecolors="black",
+                linewidths=1,
+                s=50,
+                zorder=3,
+            )
+            axes.annotate(
+                f"+{df_max[f'{self.year}_diff'].values[i]:.1f}{self.settings['metric']['unit']}",
+                xy=(
+                    df_max.index[i],
+                    df_max[f"{self.year}_above"].values[i],
+                ),
+                # Use offset for annotation text
+                xytext=(0, 10),
+                textcoords="offset points",
+                horizontalalignment="center",
+                verticalalignment="bottom",
+            )
+
+    def add_data_source(self, fig: go.Figure) -> go.Figure:
+        """
+        Add data source to the plot.
+        """
+        fig.add_annotation(
+            xref="paper",
+            yref="paper",
+            x=1,
+            y=-0.11,
+            xanchor="right",
+            showarrow=False,
+            text="<b>Data:</b> open-meteo.com, OSM, "
+            "<b>License:</b> CC by-sa-nc 4.0  "
+            "<b>Graph:</b> Jan Kühn, https://yotka.org",
+        )
+
+        return fig
+
+    def add_data_info(self, fig):
+        """
+        Add coordinates and last avalable date to the plot.
+        """
+        if self.settings["lat"] is None or self.settings["lon"] is None:
+            return
+
+        last_date_text = (
+            f" (last date included: {self.last_date})"
+            if self.year == dt.datetime.now().year
+            else ""
+        )
+
+        fig.add_annotation(
+            xref="paper",
+            yref="paper",
+            x=0,
+            y=-0.11,
+            xanchor="left",
+            showarrow=False,
+            text=f"lat: {self.settings['lat']}, lon: {self.settings['lon']}{last_date_text}",
+        )
+
+        return fig
+
+    def layout(self, fig: go.Figure) -> go.Figure:
+        """
+        Update layout options.
+        """
+
+        fig.update_layout(
+            title=dict(
+                text=(
+                    f"<b>{self.settings['metric']['title']} in {self.settings['location_name']} {self.year}</b><br />"
+                    f"<sup>{self.settings['metric']['subtitle']} "
+                    f"({self.reference_period[0]}-{self.reference_period[1]})</sup>"
+                ),
+                font=dict(
+                    family="Lato",
+                    size=32,
+                    color="#1f1f1f",
+                ),
+                x=1,
+            ),
+            template="plotly_white",
+            margin=dict(b=60, l=40, r=0),
+            hovermode="x",
+            bargap=0,
+            width=1000,
+            height=600,
+            font=dict(
+                family="Lato",
+                size=12,
+                color="#1f1f1f",
+            ),
+            xaxis=dict(
+                dtick="M1",  # Tick every month
+                hoverformat="%e %B",
+                tickformat="%b",  # Month name
+                ticklabelmode="period",  # Center tick labels
+            ),
+            yaxis=dict(
+                ticksuffix=self.settings["metric"]["unit"],
+            ),
+            # paper_bgcolor="#999",  # TODO: Remove
+            # plot_bgcolor="#ccc",  # TODO: Remove
+        )
+
+        return fig
+
+    def create_plot(self) -> plt.Figure:
+        """
+        Creates the plot.
+        """
+
+        # Create a new Figure object
+        fig = go.Figure()
+
+        # Plot the historical value for each day of the year
+        fig = self.plot_mean(fig)
+
+        # Plot percentile lines
+        fig = self.plot_percentile_lines(fig)
+
+        # Plot daily values
+        fig = self.plot_diff(fig)
+
+        # Add alternating background colors
+        if self.settings["alternate_months"]["apply"]:
+            fig = self.add_alternating_bg(fig)
+
+        # Add lat/lon and last date info
+        fig = self.add_data_info(fig)
+
+        # Data source and attribution
+        fig = self.add_data_source(fig)
+
+        # Update layout
+        fig = self.layout(fig)
+
+        # Reverse order of traces so that the bars are on top
+        # TODO: This makes the filled area disappear behind the canvas
+        fig.data = fig.data[::-1]
+
+        # TODO: Remove
+        full_fig = fig.full_figure_for_development()
+
+        # Save full_fig to file
+        # with open("tmp/full_fig_data.py", "w") as file:
+        #     file.write(str(full_fig["data"]))
+        # with open("tmp/full_fig_layout.py", "w") as file:
+        #     file.write(str(full_fig["layout"]))
+
+        return fig
+
+    def save_plot_to_file(self, fig: plt.Figure) -> None:
+        """
+        Save the plot to a file.
+        """
+        # Make sure the output directory exists
+        Path(self.settings["paths"]["output"]).mkdir(parents=True, exist_ok=True)
+
+        file_name = (
+            f"{self.settings['location_name']}-{self.settings['metric']['name']}-{self.year}_"
+            f"ref-{self.reference_period[0]}-{self.reference_period[1]}.png"
+        )
+
+        # Convert special characters to ASCII, make lowercase, and replace spaces with dashes
+        file_name = unidecode(file_name).lower().replace(" ", "-")
+
+        # Define valid characters and remove any character not in valid_chars
+        valid_chars = f"-_.(){string.ascii_letters}{string.digits}"
+        file_name = "".join(c for c in file_name if c in valid_chars)
+
+        file_path = f"{self.settings['paths']['output']}/{file_name}"
+
+        # Save the plot
+        fig.savefig(
+            file_path,
+            dpi=300,
+            bbox_inches="tight",
+        )
+
+        return file_path
+
+    def clean_output_dir(self, num_files_to_keep: int = None) -> None:
+        """
+        Remove old files from the output directory.
+        """
+        # If no number of files to keep is specified, use the default value
+        if num_files_to_keep is None:
+            num_files_to_keep = self.settings["num_files_to_keep"]
+
+        # Specify the directory
+        dir_output = Path(self.settings["paths"]["output"])
+
+        # Get all PNG files in the directory, ordered by creation date
+        png_files = sorted(dir_output.glob("*.png"), key=os.path.getctime, reverse=True)
+
+        # Remove all files except the newest ones
+        if len(png_files) > num_files_to_keep:
+            for file in png_files[num_files_to_keep:]:
+                os.remove(file)
+
+            print(f"Removed {len(png_files) - num_files_to_keep} old files.")
+
+    @staticmethod
+    def show_random(file_dir: str = None):
+        """
+        Show a random plot.
+        """
+
+        # Specify directory paths
+        if file_dir is None:
+            file_dirs = [Path("examples"), Path("output")]
+        else:
+            file_dirs = [Path(file_dir)]
+
+        file_paths = []
+
+        for directory in file_dirs:
+            # Get all PNG files in the directory and add them to file_paths
+            file_paths += list(directory.glob("*.png"))
+
+        if len(file_paths) > 0:
+            # Choose a random file
+            file = np.random.choice(file_paths)
+
+            return file.as_posix()
+
+        return None
