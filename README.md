@@ -1,4 +1,4 @@
-![Header image](header.png)
+![social-media-image](https://github.com/yotkadata/meteo_hist/assets/7913590/0d4dc378-a6be-4d61-bec8-a664d729a4e2)
 
 # MeteoHist - Historical Meteo Graphs
 
