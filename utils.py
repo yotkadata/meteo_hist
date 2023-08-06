@@ -572,6 +572,29 @@ class MeteoHist:
 
         return df_t.max(axis=1).max()
 
+    def create_file_path(self) -> str:
+        """
+        Create a file path to save the plot to a file.
+        """
+        # Make sure the output directory exists
+        Path(self.settings["paths"]["output"]).mkdir(parents=True, exist_ok=True)
+
+        file_name = (
+            f"{self.settings['location_name']}-{self.settings['metric']['name']}-{self.year}_"
+            f"ref-{self.reference_period[0]}-{self.reference_period[1]}.png"
+        )
+
+        # Convert special characters to ASCII, make lowercase, and replace spaces with dashes
+        file_name = unidecode(file_name).lower().replace(" ", "-")
+
+        # Define valid characters and remove any character not in valid_chars
+        valid_chars = f"-_.(){string.ascii_letters}{string.digits}"
+        file_name = "".join(c for c in file_name if c in valid_chars)
+
+        file_path = f"{self.settings['paths']['output']}/{file_name}"
+
+        return file_path
+
     def clean_output_dir(self, num_files_to_keep: int = None) -> None:
         """
         Remove old files from the output directory.
@@ -1146,22 +1169,7 @@ class MeteoHistStatic(MeteoHist):
         """
         Save the plot to a file.
         """
-        # Make sure the output directory exists
-        Path(self.settings["paths"]["output"]).mkdir(parents=True, exist_ok=True)
-
-        file_name = (
-            f"{self.settings['location_name']}-{self.settings['metric']['name']}-{self.year}_"
-            f"ref-{self.reference_period[0]}-{self.reference_period[1]}.png"
-        )
-
-        # Convert special characters to ASCII, make lowercase, and replace spaces with dashes
-        file_name = unidecode(file_name).lower().replace(" ", "-")
-
-        # Define valid characters and remove any character not in valid_chars
-        valid_chars = f"-_.(){string.ascii_letters}{string.digits}"
-        file_name = "".join(c for c in file_name if c in valid_chars)
-
-        file_path = f"{self.settings['paths']['output']}/{file_name}"
+        file_path = super().create_file_path()
 
         # Save the plot
         fig.savefig(
