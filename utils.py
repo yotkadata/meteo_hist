@@ -1461,6 +1461,13 @@ class MeteoHistInteractive(MeteoHist):
 
         return fig
 
+    def add_annotations(self, fig: go.Figure) -> go.Figure:
+        """
+        Add annotations to the plot.
+        """
+        # TODO: Add annotations for mean and area between p05 and p95
+        return fig
+
     def add_data_source(self, fig: go.Figure) -> go.Figure:
         """
         Add data source to the plot.
