@@ -1402,7 +1402,7 @@ class MeteoHistInteractive(MeteoHist):
 
         return fig
 
-    def annotate_max_values(self, axes):
+    def annotate_max_values(self, fig: go.Figure) -> go.Figure:
         """
         Annotate maximum values.
         """
@@ -1425,27 +1425,37 @@ class MeteoHistInteractive(MeteoHist):
             )
 
         for i in range(self.settings["highlight_max"]):
-            axes.scatter(
-                df_max.index[i],
-                df_max[f"{self.year}_above"].values[i],
-                facecolors="none",
-                edgecolors="black",
-                linewidths=1,
-                s=50,
-                zorder=3,
-            )
-            axes.annotate(
-                f"+{df_max[f'{self.year}_diff'].values[i]:.1f}{self.settings['metric']['unit']}",
-                xy=(
-                    df_max.index[i],
-                    df_max[f"{self.year}_above"].values[i],
+            # Add text
+            fig.add_annotation(
+                x=df_max["date"].iloc[i],
+                y=df_max[f"{self.year}_above"].iloc[i],
+                text=(
+                    f"+{df_max[f'{self.year}_diff'].values[i]:.1f}"
+                    f"{self.settings['metric']['unit']}"
                 ),
-                # Use offset for annotation text
-                xytext=(0, 10),
-                textcoords="offset points",
-                horizontalalignment="center",
-                verticalalignment="bottom",
+                showarrow=False,
+                xanchor="center",
+                yanchor="bottom",
+                yshift=10,
             )
+            # Add circles
+            fig.add_trace(
+                go.Scatter(
+                    x=[df_max["date"].iloc[i]],
+                    y=[df_max[f"{self.year}_above"].iloc[i]],
+                    mode="markers",
+                    name=f"Maximum {i+1}",
+                    marker=dict(
+                        color="rgba(255,255,255,0)",
+                        size=10,
+                        line=dict(color="#000", width=1),
+                    ),
+                    showlegend=False,
+                    hoverinfo="skip",
+                )
+            )
+
+        return fig
 
     def add_data_source(self, fig: go.Figure) -> go.Figure:
         """
@@ -1471,7 +1481,7 @@ class MeteoHistInteractive(MeteoHist):
         Add coordinates and last avalable date to the plot.
         """
         if self.settings["lat"] is None or self.settings["lon"] is None:
-            return
+            return fig
 
         last_date_text = (
             f" (last date included: {self.last_date})"
@@ -1557,6 +1567,10 @@ class MeteoHistInteractive(MeteoHist):
         # Add alternating background colors
         if self.settings["alternate_months"]["apply"]:
             fig = self.add_alternating_bg(fig)
+
+        # Annotate maximum values
+        if self.settings["highlight_max"] > 0:
+            fig = self.annotate_max_values(fig)
 
         # Add lat/lon and last date info
         fig = self.add_data_info(fig)
