@@ -44,9 +44,9 @@ def get_data(
     lat: float,
     lon: float,
     year: int = None,
-    reference_period: str = (1961, 1990),
-    metric="temperature_2m_mean",
-    units="metric",
+    reference_period: tuple[int, int] = (1961, 1990),
+    metric: str = "temperature_2m_mean",
+    units: str = "metric",
 ) -> pd.DataFrame:
     """
     Get data from the API and return a DataFrame with the data.
@@ -203,7 +203,7 @@ class MeteoHist:
         self,
         df_t: pd.DataFrame,
         year: int = None,
-        reference_period: tuple = (1961, 1990),
+        reference_period: tuple[int, int] = (1961, 1990),
         settings: dict = None,
     ):
         """
@@ -345,7 +345,9 @@ class MeteoHist:
         """
         return series.quantile(0.95)
 
-    def transform_df(self, df_t, year, ref_period) -> pd.DataFrame:
+    def transform_df(
+        self, df_t: pd.DataFrame, year: int, ref_period: tuple[int, int]
+    ) -> pd.DataFrame:
         """
         Transforms the dataframe to be used for plotting.
         """
@@ -512,7 +514,7 @@ class MeteoHist:
         mpl.rcParams["xtick.labelsize"] = self.settings["font"]["xtick.labelsize"]
         mpl.rcParams["ytick.labelsize"] = self.settings["font"]["ytick.labelsize"]
 
-    def prepare_axes(self, axes):
+    def prepare_axes(self, axes: plt.Axes) -> None:
         """
         Remove the borders of the plot.
         """
@@ -552,7 +554,7 @@ class MeteoHist:
         if max(current_values) > 10:
             plt.gca().set_yticklabels([f"{x:.0f}" for x in current_values])
 
-    def alternate_months(self, axes):
+    def alternate_months(self, axes: plt.Axes) -> None:
         """
         Add alternating background color for months.
         """
@@ -623,7 +625,7 @@ class MeteoHist:
             pad=20,
         )
 
-    def plot_percentile_lines(self, axes):
+    def plot_percentile_lines(self, axes: plt.Axes) -> None:
         """
         Plot the percentile lines.
         """
@@ -659,7 +661,7 @@ class MeteoHist:
                 color="black",
             )
 
-    def add_annotations(self, axes):
+    def add_annotations(self, axes: plt.Axes) -> None:
         """
         Add annotations to the plot to explain the data.
         """
@@ -804,7 +806,7 @@ class MeteoHist:
             zorder=10,
         )
 
-    def add_data_source(self, fig):
+    def add_data_source(self, fig: plt.Figure) -> None:
         """
         Add data source to the plot.
         """
@@ -822,7 +824,7 @@ class MeteoHist:
             alpha=0.5,
         )
 
-    def add_data_info(self, fig):
+    def add_data_info(self, fig: plt.Figure) -> None:
         """
         Add coordinates and last avalable date to the plot.
         """
@@ -845,7 +847,7 @@ class MeteoHist:
             alpha=0.5,
         )
 
-    def plot_diff(self, axes, cmap, method="above"):
+    def plot_diff(self, axes: plt.Axes, cmap: str, method: str = "above"):
         """
         Plot the difference between the year's value and the long-term mean.
         """
@@ -882,7 +884,7 @@ class MeteoHist:
                 zorder=8,
             )
 
-    def annotate_max_values(self, axes):
+    def annotate_max_values(self, axes: plt.Axes) -> None:
         """
         Annotate maximum values.
         """
@@ -978,7 +980,7 @@ class MeteoHist:
 
         return file_path
 
-    def create_plot(self) -> plt.Figure:
+    def create_plot(self) -> tuple[plt.Figure, str, int]:
         """
         Creates the plot.
         """
@@ -1057,7 +1059,7 @@ class MeteoHist:
         return fig, file_path, self.ref_nans
 
     @staticmethod
-    def show_random(file_dir: str = None):
+    def show_random(file_dir: str = None) -> str:
         """
         Show a random plot.
         """
