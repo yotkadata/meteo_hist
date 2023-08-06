@@ -202,7 +202,7 @@ class MeteoHist:
     def __init__(
         self,
         df_t: pd.DataFrame,
-        year: int,
+        year: int = None,
         reference_period: tuple = (1961, 1990),
         settings: dict = None,
     ):
@@ -219,8 +219,8 @@ class MeteoHist:
             Settings dictionary, by default None.
         """
         self.settings = self.update_settings(settings)
-        self.df_t = self.transform_df(df_t, year, reference_period)
-        self.year = year
+        self.year = year if year is not None else dt.datetime.now().year
+        self.df_t = self.transform_df(df_t, self.year, reference_period)
         self.reference_period = reference_period
         self.ref_nans = 0
 
