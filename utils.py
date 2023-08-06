@@ -1461,6 +1461,7 @@ class MeteoHistInteractive(MeteoHist):
             text="<b>Data:</b> open-meteo.com, OSM, "
             "<b>License:</b> CC by-sa-nc 4.0  "
             "<b>Graph:</b> Jan Kühn, https://yotka.org",
+            opacity=0.5,
         )
 
         return fig
@@ -1486,6 +1487,7 @@ class MeteoHistInteractive(MeteoHist):
             xanchor="left",
             showarrow=False,
             text=f"lat: {self.settings['lat']}, lon: {self.settings['lon']}{last_date_text}",
+            opacity=0.5,
         )
 
         return fig
