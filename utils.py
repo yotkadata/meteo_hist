@@ -321,7 +321,7 @@ class MeteoHist:
         }
 
         # Update default settings if a settings dict was provided
-        if isinstance(settings, dict):
+        if isinstance(settings, dict) and "metric" in settings:
             # Get metric defaults if metric is not defined in default_settings
             if settings["metric"]["name"] != default_settings["metric"]["name"]:
                 default_settings["metric"] = deep_update(
