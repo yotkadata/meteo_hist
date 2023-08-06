@@ -1382,6 +1382,9 @@ class MeteoHistInteractive(MeteoHist):
         Plot the difference between the year's value and the long-term mean.
         """
 
+        # Define opacity depending on whether peak alpha is enabled
+        opacity = self.df_t[f"{self.year}_alpha"] if self.settings["peak_alpha"] else 1
+
         fig.add_trace(
             go.Bar(
                 x=self.df_t["date"],
@@ -1392,6 +1395,7 @@ class MeteoHistInteractive(MeteoHist):
                     color=self.df_t[f"{self.year}_diff_norm"],
                     colorscale="RdYlBu_r",
                     line=dict(width=0),
+                    opacity=opacity,
                 ),
                 showlegend=False,
                 hovertemplate=(
