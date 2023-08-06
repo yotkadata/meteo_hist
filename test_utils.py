@@ -80,3 +80,29 @@ def test_transform_df_dates(meteohist_instance_default):
         "df_t attribute should be a Pandas DataFrame, "
         f"{type(meteohist_instance_default.df_t)} found."
     )
+
+
+def test_transform_df_values():
+    """
+    Test the if MeteoHist correctly keeps values in line.
+    """
+    lat, lon = 52.5170365, 13.3888599
+
+    # Get raw data
+    df_raw = get_data(lat, lon)
+
+    # Transform data
+    data_transformed = MeteoHist(df_raw, year=2020)
+    df_t = data_transformed.df_t
+
+    # Pick some dates
+    dates = ["2020-02-28", "2020-01-01", "2020-07-06", "2020-09-16", "2020-12-31"]
+
+    # Compare values for each date
+    for date in dates:
+        value_r = df_raw[df_raw["date"] == date]["value"].values[0]
+        value_t = df_t[df_t["date"] == date]["2020"].values[0]
+
+        assert (
+            value_r == value_t
+        ), f"Value for {date} should be {value_r}, {value_t} found."

@@ -5,6 +5,7 @@ Functions to create the plot.
 import datetime as dt
 import os
 import string
+from calendar import isleap
 from pathlib import Path
 
 import lowess
@@ -345,6 +346,66 @@ class MeteoHist:
         """
         return series.quantile(0.95)
 
+    def normalize_diff(self, series: pd.Series, fill_na: bool = True) -> pd.Series:
+        """
+        Normalize a series to the range [0, 1].
+        Initial values below 0  result between [0, 0.5] and
+        values above 0 result between [0.5, 1].
+        Values will later be used for the colorscale of the plot.
+        """
+        series = np.array(series)
+
+        # Fill NaNs with 0
+        if fill_na:
+            series = np.nan_to_num(series)
+
+        # Masks for negative and positive values
+        negative_mask = series < 0
+        positive_mask = series > 0
+
+        series_norm = series.copy()
+
+        # Normalize negative values to [0, 0.5] using the mask
+        max_value = series_norm[negative_mask].max()
+        min_value = series_norm[negative_mask].min()
+        series_norm[negative_mask] = (
+            (series_norm[negative_mask] - min_value) / (max_value - min_value) * 0.5
+        )
+
+        # Normalize positive values to [0.5, 1] using the mask
+        max_value = series_norm[positive_mask].max()
+        min_value = series_norm[positive_mask].min()
+        series_norm[positive_mask] = (series_norm[positive_mask] - min_value) / (
+            max_value - min_value
+        ) * 0.5 + 0.5
+
+        return pd.Series(series_norm)
+
+    def dayofyear_to_date(
+        self, year: int, dayofyear: int, adj_leap: bool = False
+    ) -> dt.datetime:
+        """
+        Convert a day of the year to a date.
+
+        Parameters
+        ----------
+        year : int
+            The year of the date.
+        day_of_year : int
+            The day of the year.
+        adj_leap : bool, optional
+            Adjust for leap years if years were reduced to 365 days
+            by default False
+        """
+        # Check if year is a leap year, adjust day after Feb 28 if so
+        if adj_leap and isleap(year) and dayofyear > (31 + 28):
+            dayofyear += 1
+
+        # Calculate the date for the given day of the year
+        target_date = dt.datetime(year, 1, 1) + dt.timedelta(days=dayofyear - 1)
+
+        return target_date
+
     def transform_df(
         self, df_t: pd.DataFrame, year: int, ref_period: tuple[int, int]
     ) -> pd.DataFrame:
@@ -441,6 +502,14 @@ class MeteoHist:
                 else 0.6,
                 axis=1,
             ).fillna(0)
+
+        # Create a column with the normalized difference
+        df_g[f"{year}_diff_norm"] = self.normalize_diff(df_g[f"{year}_diff"])
+
+        # Add a column with the date
+        df_g["date"] = df_g["dayofyear"].apply(
+            lambda x: self.dayofyear_to_date(year, x, True)
+        )
 
         return df_g
 
