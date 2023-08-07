@@ -29,6 +29,7 @@ def get_form_defaults() -> dict:
         "ref_period": (1961, 1990),
         "highlight_max": 1,
         "metric": "temperature_mean",
+        "plot_type": "interactive",
         "units": "metric",
         "smooth": 3,
         "peak_method": "mean",
@@ -389,6 +390,18 @@ def build_form(method: str = "by_name", params: dict = None) -> dict:
         form_values["metric"] = metrics[metrics_names.index(selected_metric)]
 
         with st.expander("Advanced settings"):
+            # Selection for interactive vs static plot
+            form_values["plot_type"] = st.radio(
+                "Plot type:",
+                ["Interactive", "Static"],
+                index=0 if defaults["plot_type"] == "interactive" else 1,
+                help="""
+                Interactive plots allow you to zoom in and out and to pan the plot.
+                Static plots are just images that can be downloaded as PNG.
+                They do not allow zooming or panning.
+                """,
+            )
+
             # Selection for unit system
             units = ["metric", "imperial"]
             units_names = ["Metric System (°C, mm)", "Imperial System (°F, In)"]
@@ -602,24 +615,30 @@ def create_graph(data: pd.DataFrame, inputs: dict) -> None:
             # Don't save plot to file here, first show it
             inputs["save_file"] = False
 
-            plot = utils.MeteoHistStatic(
-                data,
-                inputs["year"],
-                reference_period=inputs["ref_period"],
-                settings=inputs,
-            )
-            figure, file_path, ref_nans = plot.create_plot()
-            st.pyplot(figure)
+            if inputs["plot_type"] == "Static":
+                plot = utils.MeteoHistStatic(
+                    data,
+                    inputs["year"],
+                    reference_period=inputs["ref_period"],
+                    settings=inputs,
+                )
+                figure, file_path, _ = plot.create_plot()
+                st.pyplot(figure)
+            else:
+                plot = utils.MeteoHistInteractive(
+                    data,
+                    inputs["year"],
+                    reference_period=inputs["ref_period"],
+                    settings=inputs,
+                )
+                figure, file_path = plot.create_plot()
+                st.plotly_chart(figure, use_container_width=True, theme=None)
 
     # Save the plot as a file
     plot.save_plot_to_file()
 
     # Save the file path to session state
     st.session_state["last_generated"] = file_path
-
-    if ref_nans > 0.05:
-        st.warning(f"Reference period contains {ref_nans:.2%} missing values.")
-
 
 # Set page title
 st.set_page_config(page_title="Historical Meteo Graphs", layout="wide")
