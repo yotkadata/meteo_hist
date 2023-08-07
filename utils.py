@@ -1536,6 +1536,8 @@ class MeteoHistInteractive(MeteoHist):
                 yanchor="top",
             ),
             template="plotly_white",
+            paper_bgcolor="#fff",
+            plot_bgcolor="#fff",
             margin=dict(b=70, l=60, r=20, pad=10),
             hovermode="x",
             bargap=0,
@@ -1554,9 +1556,10 @@ class MeteoHistInteractive(MeteoHist):
             ),
             yaxis=dict(
                 ticksuffix=self.settings["metric"]["unit"],
+                # scaleanchor="x",
+                # scaleratio=1,
             ),
-            # paper_bgcolor="#999",  # TODO: Remove
-            # plot_bgcolor="#ccc",  # TODO: Remove
+            # aspectratio=dict(x=1, y=1),
         )
 
         return fig
