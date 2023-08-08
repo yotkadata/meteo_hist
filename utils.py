@@ -405,13 +405,13 @@ class MeteoHist:
             """
             Calculates the 5th percentile of a pandas series.
             """
-            return series.quantile(0.05)
+            return np.nanpercentile(series, 5)
 
         def p95(series: pd.Series) -> float:
             """
             Calculates the 95th percentile of a pandas series.
             """
-            return series.quantile(0.95)
+            return np.nanpercentile(series, 95)
 
         df_f = df_t.copy()
 
