@@ -8,7 +8,6 @@ import string
 from calendar import isleap
 from pathlib import Path
 
-import lowess
 import matplotlib as mpl
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
@@ -18,6 +17,7 @@ import requests
 import seaborn as sns
 from matplotlib import ticker
 from pydantic.v1.utils import deep_update
+from statsmodels.nonparametric.smoothers_lowess import lowess
 from unidecode import unidecode
 
 
@@ -248,8 +248,7 @@ class MeteoHist:
             "peak_method": "mean",
             "smooth": {
                 "apply": True,
-                "bandwidth": 0.1,
-                "polynomial": 1,
+                "frac": 1 / 12,
             },
             "save_file": True,
             "lat": None,
@@ -463,14 +462,21 @@ class MeteoHist:
         )
 
         if self.settings["smooth"]["apply"]:
-            # Add smooting using LOWESS (locally weighted scatterplot smoothing)
+            # Add smoothing using LOWESS (Locally Weighted Scatterplot Smoothing)
             for col in ["p05", "mean", "p95"]:
-                df_g[col] = lowess.lowess(
-                    df_g["dayofyear"],
+                smoothed_values = lowess(
                     df_g[col],
-                    bandwidth=self.settings["smooth"]["bandwidth"],
-                    polynomialDegree=self.settings["smooth"]["polynomial"],
+                    df_g["dayofyear"],
+                    is_sorted=True,
+                    # Fraction of data used when estimating each y-value
+                    # 1/12 roughly equals one month (a lot of smoothing)
+                    # 1/24 roughly equals two weeks (some smoothing)
+                    # 1/52 roughly equals one week (very little smoothing)
+                    frac=self.settings["smooth"]["frac"],
+                    # delta=0.01 * range(df_g["dayofyear"]),
                 )
+
+                df_g[col] = smoothed_values[:, 1]
 
         # Add column with year's value
         df_g[f"{year}"] = df_f[df_f["date"].dt.year == year]["value"].reset_index(

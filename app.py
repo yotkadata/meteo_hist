@@ -30,7 +30,7 @@ def get_form_defaults() -> dict:
         "highlight_max": 1,
         "metric": "temperature_mean",
         "units": "metric",
-        "smooth": 1,
+        "smooth": 3,
         "peak_method": "mean",
         "peak_alpha": True,
         "alternate_months": True,
@@ -404,12 +404,12 @@ def build_form(method: str = "by_name", params: dict = None) -> dict:
             form_values["smooth"] = st.slider(
                 "Smoothing:",
                 min_value=0,
-                max_value=2,
+                max_value=3,
                 value=defaults["smooth"],
                 help="""Degree of smoothing to apply to the historical data.
                 0 means no smoothing. The higher the value, the more smoothing
-                is applied. Smoothing is done using LOWESS (locally weighted
-                scatterplot smoothing).""",
+                is applied. Smoothing is done using LOWESS (Locally Weighted
+                Scatterplot Smoothing).""",
             )
 
             # Select method to calculate peaks
@@ -511,12 +511,12 @@ def process_form(form_values: dict) -> dict:
     if form_values["smooth"] == 0:
         form_values["smooth"] = {"apply": False}
     else:
-        degrees = {1: 7, 2: 1}
+        frac_values = {1: 1 / 52, 2: 1 / 24, 3: 1 / 12}
         form_values["smooth"] = {
             "apply": True,
-            # Calculate polynomial degree based on smoothing value
-            # 1->7, 2->1 (lower values mean more smoothing)
-            "polynomial": degrees[form_values["smooth"]],
+            # Get frac value based on smoothing value in form
+            # 1->1/52, 2->1/24, 3->1/12 (lower values mean less smoothing)
+            "frac": frac_values[form_values["smooth"]],
         }
 
     # Define units to be used
