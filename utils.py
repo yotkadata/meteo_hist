@@ -1624,7 +1624,7 @@ class MeteoHistInteractive(MeteoHist):
         """
         Save the plot to a file.
         """
-        file_path = super().create_file_path()
+        file_path = super().create_file_path(suffix="interactive")
 
         if not isinstance(self.fig, go.Figure):
             self.fig = self.create_plot()[0]
