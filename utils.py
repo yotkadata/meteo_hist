@@ -590,26 +590,45 @@ class MeteoHist:
 
         return df_t.max(axis=1).max()
 
-    def create_file_path(self) -> str:
+    def create_file_path(self, prefix: str = None, suffix: str = None) -> str:
         """
         Create a file path to save the plot to a file.
         """
         # Make sure the output directory exists
         Path(self.settings["paths"]["output"]).mkdir(parents=True, exist_ok=True)
 
-        file_name = (
-            f"{self.settings['location_name']}-{self.settings['metric']['name']}-{self.year}_"
-            f"ref-{self.reference_period[0]}-{self.reference_period[1]}.png"
-        )
+        file_name_elements = [
+            prefix,
+            f"{self.settings['location_name']}",
+            f"{self.settings['metric']['name']}",
+            f"{self.year}",
+            f"ref-{self.reference_period[0]}-{self.reference_period[1]}",
+            suffix,
+        ]
 
-        # Convert special characters to ASCII, make lowercase, and replace spaces with dashes
-        file_name = unidecode(file_name).lower().replace(" ", "-")
+        # Remove None values
+        file_name_elements = [
+            element for element in file_name_elements if element is not None
+        ]
+
+        # Join elements with dashes
+        file_name = "-".join(file_name_elements)
+
+        # Convert special characters to ASCII, make lowercase, and
+        # replace spaces, underscores, and dots with dashes
+        file_name = (
+            unidecode(file_name)
+            .lower()
+            .replace(" ", "-")
+            .replace("_", "-")
+            .replace(".", "-")
+        )
 
         # Define valid characters and remove any character not in valid_chars
         valid_chars = f"-_.(){string.ascii_letters}{string.digits}"
-        file_name = "".join(c for c in file_name if c in valid_chars)
+        file_name = "".join(char for char in file_name if char in valid_chars)
 
-        file_path = f"{self.settings['paths']['output']}/{file_name}"
+        file_path = f"{self.settings['paths']['output']}/{file_name}.png"
 
         return file_path
 
@@ -1192,7 +1211,7 @@ class MeteoHistStatic(MeteoHist):
         """
         Save the plot to a file.
         """
-        file_path = super().create_file_path()
+        file_path = super().create_file_path(suffix="static")
 
         if not isinstance(self.fig, plt.Figure):
             self.fig = self.create_plot()[0]
