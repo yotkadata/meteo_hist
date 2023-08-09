@@ -1163,8 +1163,8 @@ class MeteoHistStatic(MeteoHist):
             top=0.85,
         )
 
-        if self.settings["save_file"]:
-            file_path = self.save_plot_to_file(fig)
+        # Save the plot to a file if requested
+        file_path = self.save_plot_to_file(fig) if self.settings["save_file"] else None
 
         # Remove old files
         self.clean_output_dir()
