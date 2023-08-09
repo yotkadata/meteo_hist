@@ -88,6 +88,18 @@ def get_data(
     # Convert date column to datetime
     df_t["date"] = pd.to_datetime(df_t["date"])
 
+    # For min and max temperature, remove last available data in current
+    # year because it is distorted due to hourly reporting
+    # Example: if last reported value is at 3am, max represents max of 1-3am.
+    if year == dt.datetime.now().year and metric in [
+        "temperature_2m_min",
+        "temperature_2m_max",
+    ]:
+        # Get row index of last available data
+        idx = df_t[df_t["value"].notnull()].index[-1]
+        # Set value to nan
+        df_t.loc[idx, "value"] = np.nan
+
     return df_t
 
 
