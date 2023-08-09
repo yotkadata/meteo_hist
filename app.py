@@ -593,26 +593,32 @@ def download_data(inputs: dict) -> pd.DataFrame():
         return data
 
 
-def create_graph(data: pd.DataFrame, inputs: dict) -> plt.Figure:
+def create_graph(data: pd.DataFrame, inputs: dict) -> None:
     """
     Create the graph.
     """
     with st.spinner("Creating graph..."):
-        plot = utils.MeteoHistStatic(
-            data,
-            inputs["year"],
-            reference_period=inputs["ref_period"],
-            settings=inputs,
-        )
-        figure, file_path, ref_nans = plot.create_plot()
+        with plot_placeholder:
+            # Don't save plot to file here, first show it
+            inputs["save_file"] = False
 
-        # Save the file path to session state
-        st.session_state["last_generated"] = file_path
+            plot = utils.MeteoHistStatic(
+                data,
+                inputs["year"],
+                reference_period=inputs["ref_period"],
+                settings=inputs,
+            )
+            figure, file_path, ref_nans = plot.create_plot()
+            st.pyplot(figure)
 
-        if ref_nans > 0.05:
-            st.warning(f"Reference period contains {ref_nans:.2%} missing values.")
+    # Save the plot as a file
+    plot.save_plot_to_file()
 
-        return figure
+    # Save the file path to session state
+    st.session_state["last_generated"] = file_path
+
+    if ref_nans > 0.05:
+        st.warning(f"Reference period contains {ref_nans:.2%} missing values.")
 
 
 # Set page title
@@ -712,12 +718,7 @@ with col2:
 
         if meteo_data is not None:
             # Create figure for the graph
-            fig = create_graph(meteo_data, input_processed)
-
-            with st.spinner("Show graph..."):
-                # Show the figure
-                with plot_placeholder:
-                    st.pyplot(fig)
+            create_graph(meteo_data, input_processed)
 
             st.write("")
 
