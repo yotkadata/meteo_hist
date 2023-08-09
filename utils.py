@@ -1242,6 +1242,7 @@ class MeteoHistInteractive(MeteoHist):
     ):
         # Call the base class constructor using super()
         super().__init__(df_t, year, reference_period, settings)
+        self.fig = None
 
     def add_alternating_bg(self, fig: go.Figure) -> go.Figure:
         """
@@ -1602,8 +1603,11 @@ class MeteoHistInteractive(MeteoHist):
         # TODO: This makes the filled area disappear behind the canvas
         fig.data = fig.data[::-1]
 
+        # Save figure object as class attribute
+        self.fig = fig
+
         # Save the plot to a file if requested
-        file_path = self.save_plot_to_file(fig) if self.settings["save_file"] else None
+        file_path = self.save_plot_to_file() if self.settings["save_file"] else None
 
         # # TODO: Remove
         # full_fig = fig.full_figure_for_development()
@@ -1616,14 +1620,17 @@ class MeteoHistInteractive(MeteoHist):
 
         return fig, file_path
 
-    def save_plot_to_file(self, fig: plt.Figure) -> None:
+    def save_plot_to_file(self) -> None:
         """
         Save the plot to a file.
         """
         file_path = super().create_file_path()
 
+        if not isinstance(self.fig, go.Figure):
+            self.fig = self.create_plot()[0]
+
         # Save the plot
-        fig.write_image(
+        self.fig.write_image(
             file_path,
             width=1000,
             height=600,
