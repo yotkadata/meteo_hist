@@ -624,6 +624,7 @@ def create_graph(data: pd.DataFrame, inputs: dict) -> None:
                 )
                 figure, file_path, _ = plot.create_plot()
                 st.pyplot(figure)
+
             else:
                 plot = utils.MeteoHistInteractive(
                     data,
