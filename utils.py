@@ -664,6 +664,7 @@ class MeteoHistStatic(MeteoHist):
     ):
         # Call the base class constructor using super()
         super().__init__(df_t, year, reference_period, settings)
+        self.fig = None
 
     def set_plot_styles(self):
         """
@@ -1163,22 +1164,29 @@ class MeteoHistStatic(MeteoHist):
             top=0.85,
         )
 
+        # Save figure object as class attribute and close it
+        self.fig = fig
+        plt.close()
+
         # Save the plot to a file if requested
-        file_path = self.save_plot_to_file(fig) if self.settings["save_file"] else None
+        file_path = self.save_plot_to_file() if self.settings["save_file"] else None
 
         # Remove old files
         self.clean_output_dir()
 
         return fig, file_path, self.ref_nans
 
-    def save_plot_to_file(self, fig: plt.Figure) -> None:
+    def save_plot_to_file(self) -> None:
         """
         Save the plot to a file.
         """
         file_path = super().create_file_path()
 
+        if not isinstance(self.fig, plt.Figure):
+            self.fig = self.create_plot()[0]
+
         # Save the plot
-        fig.savefig(
+        self.fig.savefig(
             file_path,
             dpi=300,
             bbox_inches="tight",
