@@ -1602,8 +1602,8 @@ class MeteoHistInteractive(MeteoHist):
         # TODO: This makes the filled area disappear behind the canvas
         fig.data = fig.data[::-1]
 
-        if self.settings["save_file"]:
-            file_path = self.save_plot_to_file(fig)
+        # Save the plot to a file if requested
+        file_path = self.save_plot_to_file(fig) if self.settings["save_file"] else None
 
         # # TODO: Remove
         # full_fig = fig.full_figure_for_development()
