@@ -1484,6 +1484,7 @@ class MeteoHistInteractive(MeteoHist):
             "<b>License:</b> CC by-sa-nc 4.0  "
             "<b>Graph:</b> Jan Kühn, https://yotka.org",
             opacity=0.5,
+            font_size=12,
         )
 
         return fig
@@ -1510,6 +1511,7 @@ class MeteoHistInteractive(MeteoHist):
             showarrow=False,
             text=f"lat: {self.settings['lat']}, lon: {self.settings['lon']}{last_date_text}",
             opacity=0.5,
+            font_size=12,
         )
 
         return fig
@@ -1543,10 +1545,9 @@ class MeteoHistInteractive(MeteoHist):
             hovermode="x",
             bargap=0,
             width=1000,
-            height=600,
             font=dict(
                 family="Lato",
-                size=12,
+                size=16,
                 color="#1f1f1f",
             ),
             xaxis=dict(
@@ -1560,7 +1561,6 @@ class MeteoHistInteractive(MeteoHist):
                 # scaleanchor="x",
                 # scaleratio=1,
             ),
-            # aspectratio=dict(x=1, y=1),
         )
 
         return fig

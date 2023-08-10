@@ -633,13 +633,16 @@ def create_graph(data: pd.DataFrame, inputs: dict) -> None:
                     settings=inputs,
                 )
                 figure, file_path = plot.create_plot()
-                st.plotly_chart(figure, use_container_width=True, theme=None)
+                st.plotly_chart(
+                    figure, use_container_width=True, height=None, theme=None
+                )
 
     # Save the plot as a file
     plot.save_plot_to_file()
 
     # Save the file path to session state
     st.session_state["last_generated"] = file_path
+
 
 # Set page title
 st.set_page_config(page_title="Historical Meteo Graphs", layout="wide")

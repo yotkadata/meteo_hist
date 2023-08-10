@@ -28,3 +28,13 @@ div.css-j5r0tf {
 [title~="st.iframe"] {
     width: 100%;
 }
+
+.stPlotlyChart,
+.plot-container,
+.svg-container {
+    /* Using % of viewport width */
+    width: 66vw !important;
+    height: 44vw !important;
+    /* Somehow works with use_container_width=True, height=None
+    But some annotations go missing */
+}
