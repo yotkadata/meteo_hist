@@ -1655,6 +1655,7 @@ class MeteoHistInteractive(MeteoHist):
             xaxis=dict(
                 dtick="M1",  # Tick every month
                 hoverformat="%e %B",
+                range=[f"{self.year-1}-12-20", f"{self.year+1}-01-10"],
                 showgrid=False,
                 tickformat="%b",  # Month name
                 ticklabelmode="period",  # Center tick labels
