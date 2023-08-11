@@ -1425,7 +1425,11 @@ class MeteoHistInteractive(MeteoHist):
         """
 
         # Define opacity depending on whether peak alpha is enabled
-        opacity = self.df_t[f"{self.year}_alpha"] if self.settings["peak_alpha"] else 1
+        opacity = (
+            self.df_t[f"{self.year}_alpha"]
+            if self.settings["peak_alpha"]
+            else np.ones(len(self.df_t))
+        )
 
         # Display a simpler and faster plot if chart_type is "bar
         if chart_type == "bar":
