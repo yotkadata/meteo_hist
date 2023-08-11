@@ -17,6 +17,7 @@ import plotly.graph_objects as go
 import requests
 import seaborn as sns
 from matplotlib import ticker
+from plotly.express.colors import sample_colorscale
 from pydantic.v1.utils import deep_update
 from statsmodels.nonparametric.smoothers_lowess import lowess
 from unidecode import unidecode
@@ -1244,6 +1245,46 @@ class MeteoHistInteractive(MeteoHist):
         super().__init__(df_t, year, reference_period, settings)
         self.fig = None
 
+    def get_colorscale(self) -> np.ndarray:
+        """
+        Get the colorscale for the plot as a combination of two colormaps.
+        """
+        # Normalize difference to 0-1
+        diff = self.df_t[f"{self.year}_diff"]
+
+        # Create masks for above and below mean
+        mask_above = diff > 0
+        mask_below = diff < 0
+
+        # Normalize difference to 0-1
+        diff_norm = (diff - np.min(diff)) / (np.max(diff) - np.min(diff))
+
+        # Replace NaNs with 0
+        diff_norm = np.nan_to_num(diff_norm)
+
+        # Create a list of colors for above the mean, else color for 0
+        colors_above = sample_colorscale(
+            self.settings["metric"]["colors"]["cmap_above"],
+            np.where(mask_above, diff_norm, 0),
+        )
+        colors_below = sample_colorscale(
+            self.settings["metric"]["colors"]["cmap_below"],
+            np.where(mask_below, diff_norm, 0),
+        )
+
+        # Convert to arrays
+        colors_above = np.array(colors_above, dtype="object")
+        colors_below = np.array(colors_below, dtype="object")
+
+        # Create an array of white RGB values (default for zero)
+        colors = np.full_like(colors_below, "rgb(255, 255, 255)", dtype="object")
+
+        # Create a combined array that holds the colors for above and below
+        colors[mask_below] = colors_below[mask_below]
+        colors[mask_above] = colors_above[mask_above]
+
+        return colors
+
     def add_alternating_bg(self, fig: go.Figure) -> go.Figure:
         """
         Add alternating background color for months.
@@ -1378,7 +1419,7 @@ class MeteoHistInteractive(MeteoHist):
 
         return fig
 
-    def plot_diff(self, fig: go.Figure) -> go.Figure:
+    def plot_diff(self, fig: go.Figure, chart_type: str = "area") -> go.Figure:
         """
         Plot the difference between the year's value and the long-term mean.
         """
@@ -1386,24 +1427,81 @@ class MeteoHistInteractive(MeteoHist):
         # Define opacity depending on whether peak alpha is enabled
         opacity = self.df_t[f"{self.year}_alpha"] if self.settings["peak_alpha"] else 1
 
+        # Display a simpler and faster plot if chart_type is "bar
+        if chart_type == "bar":
+            fig.add_trace(
+                go.Bar(
+                    x=self.df_t["date"],
+                    y=self.df_t[f"{self.year}_diff"],
+                    base=self.df_t["mean"],
+                    name=f"{self.year} value",
+                    marker=dict(
+                        color=self.df_t[f"{self.year}_diff_norm"],
+                        colorscale="RdYlBu_r",
+                        line=dict(width=0),
+                        opacity=opacity,
+                    ),
+                    showlegend=False,
+                    hovertemplate=(
+                        "%{y:.1f}" f"{self.settings['metric']['unit']}<extra></extra>"
+                    ),
+                )
+            )
+
+            return fig
+
+        # Get colorscale
+        colors = self.get_colorscale()
+
+        # Invisible trace just to show the correct hover info
         fig.add_trace(
-            go.Bar(
+            go.Scatter(
                 x=self.df_t["date"],
-                y=self.df_t[f"{self.year}_diff"],
-                base=self.df_t["mean"],
-                name=f"{self.year} value",
-                marker=dict(
-                    color=self.df_t[f"{self.year}_diff_norm"],
-                    colorscale="RdYlBu_r",
-                    line=dict(width=0),
-                    opacity=opacity,
-                ),
+                y=self.df_t[f"{self.year}"],
                 showlegend=False,
+                mode="markers",
+                name="Hoverinfo current date",
                 hovertemplate=(
-                    "%{y:.1f}" f"{self.settings['metric']['unit']}<extra></extra>"
+                    "%{y:.1f}" f"{self.settings['metric']['unit']}" f"<extra></extra>"
+                ),
+                marker=dict(
+                    color=colors,  # This color will be shown on hover
+                    opacity=0,  # Hide the marker
                 ),
             )
         )
+
+        # For each day, add a filled area between the mean and the year's value
+        for i in range(len(self.df_t) - 1):
+            # Define a and y values to draw a polygon between mean and values of today and tomorrow
+            date_today = self.df_t["date"].iloc[i]
+            date_tomorrow = self.df_t["date"].iloc[i + 1]
+            mean_today = self.df_t["mean"].iloc[i]
+            mean_tomorrow = self.df_t["mean"].iloc[i + 1]
+            value_today = self.df_t[f"{self.year}"].iloc[i]
+            value_tomorrow = self.df_t[f"{self.year}"].iloc[i + 1]
+
+            # If one day is above and the other below the mean, set the value to the mean
+            if (value_today > mean_today) ^ (value_tomorrow > mean_tomorrow):
+                value_tomorrow = mean_tomorrow
+
+            x_values = [date_today, date_today, date_tomorrow, date_tomorrow]
+            y_values = [mean_today, value_today, value_tomorrow, mean_tomorrow]
+
+            fig.add_trace(
+                go.Scatter(
+                    name=f"{self.df_t['date'].iloc[i]} value",
+                    x=x_values,
+                    y=y_values,
+                    line_width=0,
+                    fill="toself",
+                    fillcolor=colors[i],
+                    showlegend=False,
+                    mode="lines",
+                    opacity=opacity[i],
+                    hoverinfo="skip",
+                )
+            )
 
         return fig
 
@@ -1553,13 +1651,13 @@ class MeteoHistInteractive(MeteoHist):
             xaxis=dict(
                 dtick="M1",  # Tick every month
                 hoverformat="%e %B",
+                showgrid=False,
                 tickformat="%b",  # Month name
                 ticklabelmode="period",  # Center tick labels
             ),
             yaxis=dict(
+                showgrid=True,
                 ticksuffix=self.settings["metric"]["unit"],
-                # scaleanchor="x",
-                # scaleratio=1,
             ),
         )
 
@@ -1610,7 +1708,7 @@ class MeteoHistInteractive(MeteoHist):
         file_path = self.save_plot_to_file() if self.settings["save_file"] else None
 
         # # TODO: Remove
-        # full_fig = fig.full_figure_for_development()
+        # full_fig = fig.full_figure_for_development(warn=False)
 
         # # Save full_fig to file
         # with open("full_fig_data.py", "w") as file:
