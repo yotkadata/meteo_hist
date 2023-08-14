@@ -416,7 +416,7 @@ class MeteoHistInteractive(MeteoHist):
             xanchor="center",
             yanchor="middle",
             arrowwidth=2,
-            arrowcolor="#666",
+            arrowcolor="#000",
             name="Reference period mean",
         )
 
@@ -475,7 +475,7 @@ class MeteoHistInteractive(MeteoHist):
             xanchor="center",
             yanchor="middle",
             arrowwidth=2,
-            arrowcolor="#666",
+            arrowcolor="#000",
             name="Reference period mean",
         )
 
@@ -570,7 +570,7 @@ class MeteoHistInteractive(MeteoHist):
             width=1000,
             font=dict(
                 family="Lato",
-                size=16,
+                size=14,
                 color="#1f1f1f",
             ),
             xaxis=dict(
