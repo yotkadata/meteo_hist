@@ -1567,8 +1567,6 @@ class MeteoHistInteractive(MeteoHist):
         y_min, y_max = self.get_y_limits()
 
         # Annotations for the mean line
-        # First we calculate the positions of the arrows and texts
-        # in different contexts
 
         if self.settings["metric"]["name"] == "precipitation_cum":
             # Position arrow on the mean line in mid April
@@ -1620,6 +1618,66 @@ class MeteoHistInteractive(MeteoHist):
             xanchor="center",
             yanchor="middle",
             arrowwidth=2,
+            arrowcolor="#666",
+            name="Reference period mean",
+        )
+
+        # Annotations for the area between p05 and p95
+
+        if self.settings["metric"]["name"] == "precipitation_cum":
+            # Position arrow 1/6 into the p05/p95 area in mid September
+            arrow_x = dt.datetime.strptime(f"{self.year}-09-15", "%Y-%m-%d")
+            idx = self.df_t[self.df_t["date"] == arrow_x].index[0]
+            mean, p05 = self.df_t.iloc[idx]["mean"], self.df_t.iloc[idx]["p05"]
+            arrow_y = p05 + (mean - p05) / 6
+
+            # Position text center mid October
+            # between minimum value for September to November and y axis minimum
+            text_x = dt.datetime.strptime(f"{self.year}-10-15", "%Y-%m-%d")
+            min_value = super().get_min_max((244, 334), which="min")
+            text_y = (min_value + y_min) / 2
+
+        elif self.settings["metric"]["name"] == "precipitation_rolling":
+            # Position arrow 1/6 into the p05/p95 area in mid September
+            arrow_x = dt.datetime.strptime(f"{self.year}-09-15", "%Y-%m-%d")
+            idx = self.df_t[self.df_t["date"] == arrow_x].index[0]
+            mean, p95 = self.df_t.iloc[idx]["mean"], self.df_t.iloc[idx]["p95"]
+            arrow_y = p95 - (p95 - mean) / 6
+
+            # Position text center mid October
+            # between maximum value for September to November and y axis maximum
+            text_x = dt.datetime.strptime(f"{self.year}-10-15", "%Y-%m-%d")
+            max_value = super().get_min_max((244, 334))
+            text_y = (max_value + y_max) / 2
+
+        else:
+            # Position arrow 1/6 into the p05/p95 area in mid October
+            arrow_x = dt.datetime.strptime(f"{self.year}-10-15", "%Y-%m-%d")
+            idx = self.df_t[self.df_t["date"] == arrow_x].index[0]
+            mean, p05 = self.df_t.iloc[idx]["mean"], self.df_t.iloc[idx]["p05"]
+            arrow_y = p05 + (mean - p05) / 6
+
+            # Position text center mid September
+            # between minimum value for September to November and y axis minimum
+            text_x = dt.datetime.strptime(f"{self.year}-09-15", "%Y-%m-%d")
+            min_value = super().get_min_max((244, 334), which="min")
+            text_y = (min_value + y_min) / 2
+
+        fig.add_annotation(
+            x=arrow_x,
+            y=arrow_y,
+            xref="x",
+            yref="y",
+            ax=text_x,
+            ay=text_y,
+            axref="x",
+            ayref="y",
+            text="90% of reference period<br />values fall within the gray area",
+            showarrow=True,
+            xanchor="center",
+            yanchor="middle",
+            arrowwidth=2,
+            arrowcolor="#666",
             name="Reference period mean",
         )
 
