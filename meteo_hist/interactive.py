@@ -120,9 +120,43 @@ class MeteoHistInteractive(MeteoHist):
 
         return fig
 
+    def plot_percentile_area(self, fig: go.Figure) -> go.Figure:
+        """
+        Add filled area between p05 and p95 to plot.
+        """
+
+        fig.add_traces(
+            [
+                # p95 trace used as upper bound
+                go.Scatter(
+                    x=self.df_t["date"],
+                    y=self.df_t["p95"],
+                    name="Percentile area upper bound (p95)",
+                    # Make line invisible
+                    line_color="rgba(0,0,0,0)",
+                    showlegend=False,
+                    hoverinfo="skip",
+                ),
+                # Fill area between p05 and p95
+                go.Scatter(
+                    x=self.df_t["date"],
+                    y=self.df_t["p05"],
+                    name="Area between p05 and p95",
+                    fill="tonexty",
+                    fillcolor="#f8f8f8",
+                    # Make line invisible
+                    line_color="rgba(0,0,0,0)",
+                    showlegend=False,
+                    hoverinfo="skip",
+                ),
+            ]
+        )
+
+        return fig
+
     def plot_percentile_lines(self, fig: go.Figure) -> go.Figure:
         """
-        Add percentile lines and filled area to plot.
+        Add percentile lines to plot.
         """
 
         fig.add_traces(
@@ -141,18 +175,6 @@ class MeteoHistInteractive(MeteoHist):
                         f"{self.reference_period[1]}</b></extra>"
                     ),
                 ),
-                # Fill area between p05 and p95 (last trace added)
-                go.Scatter(
-                    x=self.df_t["date"],
-                    y=self.df_t["p05"],
-                    fill="tonexty",
-                    fillcolor="#f8f8f8",
-                    # Make line transparent
-                    line=dict(color="rgba(0,0,0,0)"),
-                    showlegend=False,
-                    # Remove hoverinfo
-                    hoverinfo="skip",
-                ),
                 # p05 trace
                 go.Scatter(
                     x=self.df_t["date"],
@@ -169,17 +191,6 @@ class MeteoHistInteractive(MeteoHist):
                 ),
             ]
         )
-
-        # Add annotations for percentile lines
-        for percentile in ["p05", "p95"]:
-            fig.add_annotation(
-                x=self.df_t["date"].iloc[-1],
-                y=self.df_t[percentile].iloc[-1],
-                text=percentile.upper(),
-                showarrow=False,
-                xanchor="left",
-                yanchor="middle",
-            )
 
         return fig
 
@@ -277,7 +288,7 @@ class MeteoHistInteractive(MeteoHist):
 
             fig.add_trace(
                 go.Scatter(
-                    name=f"{self.df_t['date'].iloc[i]} value",
+                    name=f"Daily value {self.df_t['date'].iloc[i].strftime('%d.%m.%Y')}",
                     x=[date_today, date_today, date_tomorrow, date_tomorrow],
                     y=[mean_today, value_today, value_tomorrow, mean_tomorrow],
                     line_width=0,
@@ -468,6 +479,17 @@ class MeteoHistInteractive(MeteoHist):
             name="Reference period mean",
         )
 
+        # Annotations for percentile lines
+        for percentile in ["p05", "p95"]:
+            fig.add_annotation(
+                x=self.df_t["date"].iloc[-1],
+                y=self.df_t[percentile].iloc[-1],
+                text=percentile.upper(),
+                showarrow=False,
+                xanchor="left",
+                yanchor="middle",
+            )
+
         return fig
 
     def add_data_source(self, fig: go.Figure) -> go.Figure:
@@ -575,14 +597,17 @@ class MeteoHistInteractive(MeteoHist):
         # Create a new Figure object
         fig = go.Figure()
 
-        # Plot the historical value for each day of the year
-        fig = self.plot_mean(fig)
+        # Plot percentile area
+        fig = self.plot_percentile_area(fig)
+
+        # Plot daily values
+        fig = self.plot_diff(fig, chart_type="area")
 
         # Plot percentile lines
         fig = self.plot_percentile_lines(fig)
 
-        # Plot daily values
-        fig = self.plot_diff(fig, chart_type="area")
+        # Plot the historical value for each day of the year
+        fig = self.plot_mean(fig)
 
         # Add alternating background colors
         if self.settings["alternate_months"]["apply"]:
@@ -603,10 +628,6 @@ class MeteoHistInteractive(MeteoHist):
 
         # Update layout
         fig = self.layout(fig)
-
-        # Reverse order of traces so that the bars are on top
-        # TODO: This makes the filled area disappear behind the canvas
-        fig.data = fig.data[::-1]
 
         # Save figure object as class attribute
         self.fig = fig
