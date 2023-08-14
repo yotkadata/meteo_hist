@@ -13,7 +13,14 @@ import streamlit as st
 from pydantic.v1.utils import deep_update
 from streamlit_folium import folium_static
 
-import utils
+from meteo_hist.base import (
+    MeteoHist,
+    MeteoHistStatic,
+    MeteoHistInteractive,
+    get_location,
+    get_data,
+    get_lat_lon,
+)
 
 
 def get_form_defaults() -> dict:
@@ -214,7 +221,7 @@ def build_location_by_name(location: str) -> tuple[float, float, str]:
     """
     with st.spinner("Searching for latitude and longitude..."):
         # Get the latitude and longitude
-        location = utils.get_lat_lon(location)
+        location = get_lat_lon(location)
 
         if len(location) == 0:
             message_box.error("Location not found. Please try again.")
@@ -233,7 +240,7 @@ def build_location_by_coords(lat: float, lon: float, display_name: str) -> str:
     """
     with st.spinner("Searching for location name..."):
         # Get the location name
-        location = utils.get_location((lat, lon))
+        location = get_location((lat, lon))
 
         if location is None and display_name is None:
             location = None
@@ -580,7 +587,7 @@ def download_data(inputs: dict) -> pd.DataFrame():
 
     with st.spinner("Downloading data..."):
         # Download the data
-        data = utils.get_data(
+        data = get_data(
             inputs["lat"],
             inputs["lon"],
             year=inputs["year"],
@@ -616,7 +623,7 @@ def create_graph(data: pd.DataFrame, inputs: dict) -> None:
             inputs["save_file"] = False
 
             if inputs["plot_type"] == "Static":
-                plot = utils.MeteoHistStatic(
+                plot = MeteoHistStatic(
                     data,
                     inputs["year"],
                     reference_period=inputs["ref_period"],
@@ -626,7 +633,7 @@ def create_graph(data: pd.DataFrame, inputs: dict) -> None:
                 st.pyplot(figure)
 
             else:
-                plot = utils.MeteoHistInteractive(
+                plot = MeteoHistInteractive(
                     data,
                     inputs["year"],
                     reference_period=inputs["ref_period"],
@@ -729,7 +736,7 @@ with col2:
     # Show a random graph on start (but not when the user clicks the "Create" button)
     if "last_generated" not in st.session_state and input_values is None:
         if "start_img" not in st.session_state:
-            st.session_state["start_img"] = utils.MeteoHist.show_random()
+            st.session_state["start_img"] = MeteoHist.show_random()
         plot_placeholder.image(st.session_state["start_img"])
 
     if input_values is not None:
@@ -767,7 +774,7 @@ with col2:
     if random_graph:
         st.write("Random graph from the list of graphs created before.")
         with plot_placeholder:
-            img = utils.MeteoHist.show_random()
+            img = MeteoHist.show_random()
             if img:
                 st.session_state["start_img"] = img
                 st.image(img)
