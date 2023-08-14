@@ -24,9 +24,11 @@ class MeteoHistInteractive(MeteoHist):
         year: int = None,
         reference_period: tuple[int, int] = (1961, 1990),
         settings: dict = None,
+        layout_options: dict = None,
     ):
         # Call the base class constructor using super()
         super().__init__(df_t, year, reference_period, settings)
+        self.layout_options = layout_options
         self.fig = None
 
     def get_colorscale(self) -> np.ndarray:
@@ -499,6 +501,7 @@ class MeteoHistInteractive(MeteoHist):
         fig.add_annotation(
             xref="paper",
             yref="paper",
+            name="Data source",
             x=1,
             y=-0.14,
             xanchor="right",
@@ -528,6 +531,7 @@ class MeteoHistInteractive(MeteoHist):
         fig.add_annotation(
             xref="paper",
             yref="paper",
+            name="Data info",
             x=0,
             y=-0.14,
             xanchor="left",
@@ -568,6 +572,7 @@ class MeteoHistInteractive(MeteoHist):
             hovermode="x",
             bargap=0,
             width=1000,
+            height=600,
             font=dict(
                 family="Lato",
                 size=14,
@@ -586,6 +591,10 @@ class MeteoHistInteractive(MeteoHist):
                 ticksuffix=self.settings["metric"]["unit"],
             ),
         )
+
+        # Update layout with user defined options
+        if isinstance(self.layout_options, dict):
+            fig.update_layout(self.layout_options)
 
         return fig
 

@@ -4,6 +4,7 @@ Streamlit app.
 
 import datetime as dt
 import urllib.parse
+from copy import deepcopy
 
 import extra_streamlit_components as stx
 import folium
@@ -11,10 +12,11 @@ import pandas as pd
 import streamlit as st
 from pydantic.v1.utils import deep_update
 from streamlit_folium import folium_static
+from streamlit_js_eval import streamlit_js_eval
 
-from meteo_hist.base import MeteoHist, get_location, get_data, get_lat_lon
-from meteo_hist.static import MeteoHistStatic
+from meteo_hist.base import MeteoHist, get_data, get_lat_lon, get_location
 from meteo_hist.interactive import MeteoHistInteractive
+from meteo_hist.static import MeteoHistStatic
 
 
 def get_form_defaults() -> dict:
@@ -627,16 +629,36 @@ def create_graph(data: pd.DataFrame, inputs: dict) -> None:
                 st.pyplot(figure)
 
             else:
+                # Calculate width and height based on viewport width
+                width = st.session_state["viewport_width"] * 0.74
+                height = width * 3 / 5
+
+                # Instantiate the plot object
                 plot = MeteoHistInteractive(
                     data,
                     inputs["year"],
                     reference_period=inputs["ref_period"],
                     settings=inputs,
                 )
+
+                # Create figure
                 figure, file_path = plot.create_plot()
-                st.plotly_chart(
-                    figure, use_container_width=True, height=None, theme=None
-                )
+
+                # Create a copy of the figure to display in Streamlit
+                figure_display = deepcopy(figure)
+
+                # Set layout options just for the plot in Streamlit
+                layout_options = {"width": width, "height": height, "font_size": 18}
+                figure_display.update_layout(layout_options)
+
+                # Adjust position and font size of annotations
+                for annotation_name in ["Data source", "Data info"]:
+                    figure_display.update_annotations(
+                        selector={"name": annotation_name}, y=-0.11, font_size=14
+                    )
+
+                # Display the plot
+                st.plotly_chart(figure_display, theme=None, width=width, height=height)
 
     # Save the plot as a file
     plot.save_plot_to_file()
@@ -659,6 +681,11 @@ if "form_defaults" not in st.session_state:
 # Set base URL
 if "base_url" not in st.session_state:
     st.session_state["base_url"] = "https://yotka.org/meteo-hist/"
+
+# Save viewport width to session state
+st.session_state["viewport_width"] = streamlit_js_eval(
+    js_expressions="window.innerWidth", key="ViewportWidthPrint"
+)
 
 col1, col2 = st.columns([1, 3])
 
