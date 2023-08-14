@@ -1431,7 +1431,10 @@ class MeteoHistInteractive(MeteoHist):
             else np.ones(len(self.df_t))
         )
 
-        # Display a simpler and faster plot if chart_type is "bar
+        # Get colorscale
+        colors = self.get_colorscale()
+
+        # Display a simpler and faster plot if chart_type is "bar"
         if chart_type == "bar":
             fig.add_trace(
                 go.Bar(
@@ -1440,9 +1443,8 @@ class MeteoHistInteractive(MeteoHist):
                     base=self.df_t["mean"],
                     name=f"{self.year} value",
                     marker=dict(
-                        color=self.df_t[f"{self.year}_diff_norm"],
-                        colorscale="RdYlBu_r",
-                        line=dict(width=0),
+                        color=colors,
+                        line_width=0,
                         opacity=opacity,
                     ),
                     showlegend=False,
@@ -1453,9 +1455,6 @@ class MeteoHistInteractive(MeteoHist):
             )
 
             return fig
-
-        # Get colorscale
-        colors = self.get_colorscale()
 
         # Invisible trace just to show the correct hover info
         fig.add_trace(
@@ -1477,7 +1476,7 @@ class MeteoHistInteractive(MeteoHist):
 
         # For each day, add a filled area between the mean and the year's value
         for i in range(len(self.df_t) - 1):
-            # Define a and y values to draw a polygon between mean and values of today and tomorrow
+            # Define x and y values to draw a polygon between mean and values of today and tomorrow
             date_today = self.df_t["date"].iloc[i]
             date_tomorrow = self.df_t["date"].iloc[i + 1]
             mean_today = self.df_t["mean"].iloc[i]
@@ -1489,14 +1488,11 @@ class MeteoHistInteractive(MeteoHist):
             if (value_today > mean_today) ^ (value_tomorrow > mean_tomorrow):
                 value_tomorrow = mean_tomorrow
 
-            x_values = [date_today, date_today, date_tomorrow, date_tomorrow]
-            y_values = [mean_today, value_today, value_tomorrow, mean_tomorrow]
-
             fig.add_trace(
                 go.Scatter(
                     name=f"{self.df_t['date'].iloc[i]} value",
-                    x=x_values,
-                    y=y_values,
+                    x=[date_today, date_today, date_tomorrow, date_tomorrow],
+                    y=[mean_today, value_today, value_tomorrow, mean_tomorrow],
                     line_width=0,
                     fill="toself",
                     fillcolor=colors[i],
@@ -1683,7 +1679,7 @@ class MeteoHistInteractive(MeteoHist):
         fig = self.plot_percentile_lines(fig)
 
         # Plot daily values
-        fig = self.plot_diff(fig)
+        fig = self.plot_diff(fig, chart_type="area")
 
         # Add alternating background colors
         if self.settings["alternate_months"]["apply"]:
