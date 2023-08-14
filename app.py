@@ -7,7 +7,6 @@ import urllib.parse
 
 import extra_streamlit_components as stx
 import folium
-import matplotlib.pyplot as plt
 import pandas as pd
 import streamlit as st
 from pydantic.v1.utils import deep_update
