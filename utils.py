@@ -1562,9 +1562,67 @@ class MeteoHistInteractive(MeteoHist):
 
     def add_annotations(self, fig: go.Figure) -> go.Figure:
         """
-        Add annotations to the plot.
+        Add annotations to the plot to explain the data.
         """
-        # TODO: Add annotations for mean and area between p05 and p95
+        y_min, y_max = self.get_y_limits()
+
+        # Annotations for the mean line
+        # First we calculate the positions of the arrows and texts
+        # in different contexts
+
+        if self.settings["metric"]["name"] == "precipitation_cum":
+            # Position arrow on the mean line in mid April
+            arrow_x = dt.datetime.strptime(f"{self.year}-04-15", "%Y-%m-%d")
+            arrow_y = self.df_t[self.df_t["date"] == arrow_x]["mean"].values[0]
+
+            # Position text center mid March
+            # between maximum value for January to March and y axis maximum
+            text_x = dt.datetime.strptime(f"{self.year}-03-15", "%Y-%m-%d")
+            max_value = super().get_min_max((1, 90))
+            text_y = (max_value + y_max) / 2
+
+        elif self.settings["metric"]["name"] == "precipitation_rolling":
+            # Position arrow on the mean line in mid March
+            arrow_x = dt.datetime.strptime(f"{self.year}-03-15", "%Y-%m-%d")
+            arrow_y = self.df_t[self.df_t["date"] == arrow_x]["mean"].values[0]
+
+            # Position text center in February
+            # between maximum value for January to March and y axis maximum
+            text_x = dt.datetime.strptime(f"{self.year}-02-01", "%Y-%m-%d")
+            max_value = super().get_min_max((1, 90))
+            text_y = (max_value + y_max) / 2
+
+        else:
+            # Position arrow on the mean line in March
+            arrow_x = dt.datetime.strptime(f"{self.year}-03-01", "%Y-%m-%d")
+            arrow_y = self.df_t[self.df_t["date"] == arrow_x]["mean"].values[0]
+
+            # Position text center in mid April
+            # between minimum value for Feb to June and y axis minimum
+            text_x = dt.datetime.strptime(f"{self.year}-04-15", "%Y-%m-%d")
+            min_value = super().get_min_max((32, 181), which="min")
+            text_y = (min_value + y_min) / 2
+
+        fig.add_annotation(
+            x=arrow_x,
+            y=arrow_y,
+            xref="x",
+            yref="y",
+            ax=text_x,
+            ay=text_y,
+            axref="x",
+            ayref="y",
+            text=(
+                f"{self.settings['metric']['description']}<br />"
+                f"{self.reference_period[0]}-{self.reference_period[1]}"
+            ),
+            showarrow=True,
+            xanchor="center",
+            yanchor="middle",
+            arrowwidth=2,
+            name="Reference period mean",
+        )
+
         return fig
 
     def add_data_source(self, fig: go.Figure) -> go.Figure:
@@ -1685,6 +1743,9 @@ class MeteoHistInteractive(MeteoHist):
         if self.settings["alternate_months"]["apply"]:
             fig = self.add_alternating_bg(fig)
 
+        # Add annotations to explain the data
+        fig = self.add_annotations(fig)
+
         # Annotate maximum values
         if self.settings["highlight_max"] > 0:
             fig = self.annotate_max_values(fig)
@@ -1707,15 +1768,6 @@ class MeteoHistInteractive(MeteoHist):
 
         # Save the plot to a file if requested
         file_path = self.save_plot_to_file() if self.settings["save_file"] else None
-
-        # # TODO: Remove
-        # full_fig = fig.full_figure_for_development(warn=False)
-
-        # # Save full_fig to file
-        # with open("full_fig_data.py", "w") as file:
-        #     file.write(str(full_fig["data"]))
-        # with open("full_fig_layout.py", "w") as file:
-        #     file.write(str(full_fig["layout"]))
 
         return fig, file_path
 
