@@ -12,14 +12,9 @@ import streamlit as st
 from pydantic.v1.utils import deep_update
 from streamlit_folium import folium_static
 
-from meteo_hist.base import (
-    MeteoHist,
-    MeteoHistStatic,
-    MeteoHistInteractive,
-    get_location,
-    get_data,
-    get_lat_lon,
-)
+from meteo_hist.base import MeteoHist, get_location, get_data, get_lat_lon
+from meteo_hist.static import MeteoHistStatic
+from meteo_hist.interactive import MeteoHistInteractive
 
 
 def get_form_defaults() -> dict:

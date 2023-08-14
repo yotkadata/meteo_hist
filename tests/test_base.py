@@ -6,7 +6,7 @@ import datetime as dt
 import pandas as pd
 import pytest
 
-from utils import MeteoHist, get_data
+from meteo_hist.base import MeteoHist, get_data
 
 
 @pytest.fixture(name="meteohist_instance_default")
