@@ -137,7 +137,8 @@ class MeteoHistInteractive(MeteoHist):
                     hovertemplate=(
                         "%{y:.1f}"
                         f"{self.settings['metric']['unit']}"
-                        f"<extra><b>95th percentile {self.reference_period[0]}-{self.reference_period[1]}</b></extra>"
+                        f"<extra><b>95th percentile {self.reference_period[0]}-"
+                        f"{self.reference_period[1]}</b></extra>"
                     ),
                 ),
                 # Fill area between p05 and p95 (last trace added)
@@ -162,7 +163,8 @@ class MeteoHistInteractive(MeteoHist):
                     hovertemplate=(
                         "%{y:.1f}"
                         f"{self.settings['metric']['unit']}"
-                        f"<extra><b>5th percentile {self.reference_period[0]}-{self.reference_period[1]}</b></extra>"
+                        f"<extra><b>5th percentile {self.reference_period[0]}-"
+                        f"{self.reference_period[1]}</b></extra>"
                     ),
                 ),
             ]
@@ -196,7 +198,8 @@ class MeteoHistInteractive(MeteoHist):
                 hovertemplate=(
                     "%{y:.1f}"
                     f"{self.settings['metric']['unit']}"
-                    f"<extra><b>Mean {self.reference_period[0]}-{self.reference_period[1]}</b></extra>"
+                    f"<extra><b>Mean {self.reference_period[0]}-"
+                    f"{self.reference_period[1]}</b></extra>"
                 ),
             ),
         )
@@ -522,8 +525,8 @@ class MeteoHistInteractive(MeteoHist):
         fig.update_layout(
             title=dict(
                 text=(
-                    f"<b>{self.settings['metric']['title']} in {self.settings['location_name']} {self.year}</b><br />"
-                    f"<sup>{self.settings['metric']['subtitle']} "
+                    f"<b>{self.settings['metric']['title']} in {self.settings['location_name']} "
+                    f"{self.year}</b><br /><sup>{self.settings['metric']['subtitle']} "
                     f"({self.reference_period[0]}-{self.reference_period[1]})</sup>"
                 ),
                 font=dict(
