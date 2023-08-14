@@ -445,9 +445,9 @@ class MeteoHistInteractive(MeteoHist):
             arrow_y = p05 + (mean - p05) / 6
 
             # Position text center mid September
-            # between minimum value for September to November and y axis minimum
+            # between minimum value for August to October and y axis minimum
             text_x = dt.datetime.strptime(f"{self.year}-09-15", "%Y-%m-%d")
-            min_value = super().get_min_max((244, 334), which="min")
+            min_value = super().get_min_max((213, 304), which="min")
             text_y = (min_value + y_min) / 2
 
         fig.add_annotation(
