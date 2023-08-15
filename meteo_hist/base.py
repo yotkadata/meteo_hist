@@ -342,47 +342,6 @@ class MeteoHist:
 
         return default_settings
 
-    def normalize_diff(self, series: pd.Series, fill_na: bool = True) -> pd.Series:
-        """
-        Normalize a series to the range [0, 1].
-        Initial values below 0 result between [0, 0.5] and
-        values above 0 result between [0.5, 1].
-        Values will later be used for the colorscale of the plot.
-        """
-        series = np.array(series)
-
-        # Fill NaNs with 0
-        if fill_na:
-            series = np.nan_to_num(series)
-
-        # Masks for negative and positive values
-        negative_mask = series < 0
-        positive_mask = series > 0
-
-        series_norm = series.copy()
-
-        # Normalize negative values to [0, 0.5] using the mask
-        if len(series_norm[negative_mask]) > 0:
-            max_value = series_norm[negative_mask].max()
-            min_value = series_norm[negative_mask].min()
-            series_norm[negative_mask] = (
-                (series_norm[negative_mask] - min_value) / (max_value - min_value) * 0.5
-            )
-        else:
-            series_norm[negative_mask] = np.full_like(series_norm[negative_mask], 0)
-
-        # Normalize positive values to [0.5, 1] using the mask
-        if len(series_norm[positive_mask]) > 0:
-            max_value = series_norm[positive_mask].max()
-            min_value = series_norm[positive_mask].min()
-            series_norm[positive_mask] = (series_norm[positive_mask] - min_value) / (
-                max_value - min_value
-            ) * 0.5 + 0.5
-        else:
-            series_norm[positive_mask] = np.full_like(series_norm[positive_mask], 0.5)
-
-        return pd.Series(series_norm)
-
     def dayofyear_to_date(
         self, year: int, dayofyear: int, adj_leap: bool = False
     ) -> dt.datetime:
@@ -524,9 +483,6 @@ class MeteoHist:
                 else 0.6,
                 axis=1,
             ).fillna(0)
-
-        # Create a column with the normalized difference
-        df_g[f"{year}_diff_norm"] = self.normalize_diff(df_g[f"{year}_diff"])
 
         # Add a column with the date
         df_g["date"] = df_g["dayofyear"].apply(
