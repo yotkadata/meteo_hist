@@ -285,57 +285,13 @@ class MeteoHist:
             },
         }
 
-        # Define default values by metric
-        defaults_by_metric = {
-            "temperature_min": {
-                "name": "temperature_min",
-                "data": "temperature_2m_min",
-                "title": "Minimum temperatures",
-                "subtitle": "Compared to average of historical daily minimum temperatures",
-                "description": "Average of minimum temperatures",
-            },
-            "temperature_max": {
-                "name": "temperature_max",
-                "data": "temperature_2m_max",
-                "title": "Maximum temperatures",
-                "subtitle": "Compared to average of historical daily maximum temperatures",
-                "description": "Average of maximum temperatures",
-            },
-            "precipitation_rolling": {
-                "name": "precipitation_rolling",
-                "data": "precipitation_sum",
-                "title": "Precipitation",
-                "subtitle": "30-day Rolling Average compared to historical values",
-                "description": "Mean of Rolling Average",
-                "unit": "mm",
-                "yaxis_label": "Precipitation",
-                "colors": {
-                    "cmap_above": "YlGnBu",
-                    "cmap_below": "YlOrRd_r",
-                },
-            },
-            "precipitation_cum": {
-                "name": "precipitation_cum",
-                "data": "precipitation_sum",
-                "title": "Precipitation",
-                "subtitle": "Cumuluated precipitation compared to historical values",
-                "description": "Mean of cumulated Precipitation",
-                "unit": "mm",
-                "yaxis_label": "Precipitation",
-                "colors": {
-                    "cmap_above": "YlGnBu",
-                    "cmap_below": "YlOrRd_r",
-                },
-            },
-        }
-
         # Update default settings if a settings dict was provided
         if isinstance(settings, dict) and "metric" in settings:
             # Get metric defaults if metric is not defined in default_settings
             if settings["metric"]["name"] != default_settings["metric"]["name"]:
                 default_settings["metric"] = deep_update(
                     default_settings["metric"],
-                    defaults_by_metric[settings["metric"]["name"]],
+                    self.get_metric_info(settings["metric"]["name"]),
                 )
             settings = deep_update(default_settings, settings)
             return settings
@@ -531,6 +487,57 @@ class MeteoHist:
             return df_t.min(axis=1).min()
 
         return df_t.max(axis=1).max()
+
+    def get_metric_info(self, name: str = "temperature_mean") -> dict:
+        """
+        Get information about a metric.
+        """
+
+        # Define default values by metric
+        defaults_by_metric = {
+            "temperature_min": {
+                "name": "temperature_min",
+                "data": "temperature_2m_min",
+                "title": "Minimum temperatures",
+                "subtitle": "Compared to average of historical daily minimum temperatures",
+                "description": "Average of minimum temperatures",
+            },
+            "temperature_max": {
+                "name": "temperature_max",
+                "data": "temperature_2m_max",
+                "title": "Maximum temperatures",
+                "subtitle": "Compared to average of historical daily maximum temperatures",
+                "description": "Average of maximum temperatures",
+            },
+            "precipitation_rolling": {
+                "name": "precipitation_rolling",
+                "data": "precipitation_sum",
+                "title": "Precipitation",
+                "subtitle": "30-day Rolling Average compared to historical values",
+                "description": "Mean of Rolling Average",
+                "unit": "mm",
+                "yaxis_label": "Precipitation",
+                "colors": {
+                    "cmap_above": "YlGnBu",
+                    "cmap_below": "YlOrRd_r",
+                },
+            },
+            "precipitation_cum": {
+                "name": "precipitation_cum",
+                "data": "precipitation_sum",
+                "title": "Precipitation",
+                "subtitle": "Cumuluated precipitation compared to historical values",
+                "description": "Mean of cumulated Precipitation",
+                "unit": "mm",
+                "yaxis_label": "Precipitation",
+                "colors": {
+                    "cmap_above": "YlGnBu",
+                    "cmap_below": "YlOrRd_r",
+                },
+            },
+        }
+
+        return defaults_by_metric[name]
 
     def create_file_path(self, prefix: str = None, suffix: str = None) -> str:
         """
