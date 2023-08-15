@@ -213,6 +213,7 @@ class MeteoHist:
         df_t: pd.DataFrame,
         year: int = None,
         reference_period: tuple[int, int] = (1961, 1990),
+        metric: str = "temperature_mean",
         settings: dict = None,
     ):
         """
@@ -227,6 +228,7 @@ class MeteoHist:
         settings : dict, optional
             Settings dictionary, by default None.
         """
+        self.metric = metric
         self.settings = self.update_settings(settings)
         self.year = year if year is not None else dt.datetime.now().year
         self.df_t = self.transform_df(df_t, self.year, reference_period)
@@ -262,18 +264,7 @@ class MeteoHist:
             "lat": None,
             "lon": None,
             "location_name": None,
-            "metric": {
-                "name": "temperature_mean",
-                "data": "temperature_2m_mean",
-                "title": "Mean temperatures",
-                "subtitle": "Compared to historical daily mean temperatures",
-                "description": "Mean Temperature",
-                "yaxis_label": "Temperature",
-                "colors": {
-                    "cmap_above": "YlOrRd",
-                    "cmap_below": "YlGnBu_r",
-                },
-            },
+            "metric": self.get_metric_info(self.metric),
             "alternate_months": {
                 "apply": True,
                 "odd_color": "#fff",
@@ -286,15 +277,8 @@ class MeteoHist:
         }
 
         # Update default settings if a settings dict was provided
-        if isinstance(settings, dict) and "metric" in settings:
-            # Get metric defaults if metric is not defined in default_settings
-            if settings["metric"]["name"] != default_settings["metric"]["name"]:
-                default_settings["metric"] = deep_update(
-                    default_settings["metric"],
-                    self.get_metric_info(settings["metric"]["name"]),
-                )
-            settings = deep_update(default_settings, settings)
-            return settings
+        if isinstance(settings, dict):
+            return deep_update(default_settings, settings)
 
         return default_settings
 

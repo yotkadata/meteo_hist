@@ -648,6 +648,7 @@ def create_graph(data: pd.DataFrame, inputs: dict) -> None:
                     data,
                     inputs["year"],
                     reference_period=inputs["ref_period"],
+                    metric=inputs["metric"]["name"],
                     settings=inputs,
                 )
 

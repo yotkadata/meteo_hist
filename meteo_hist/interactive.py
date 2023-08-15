@@ -23,11 +23,12 @@ class MeteoHistInteractive(MeteoHist):
         df_t: pd.DataFrame,
         year: int = None,
         reference_period: tuple[int, int] = (1961, 1990),
+        metric: str = "temperature_mean",
         settings: dict = None,
         layout_options: dict = None,
     ):
         # Call the base class constructor using super()
-        super().__init__(df_t, year, reference_period, settings)
+        super().__init__(df_t, year, reference_period, metric, settings)
         self.layout_options = layout_options
         self.fig = None
 

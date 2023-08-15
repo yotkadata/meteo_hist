@@ -25,10 +25,11 @@ class MeteoHistStatic(MeteoHist):
         df_t: pd.DataFrame,
         year: int = None,
         reference_period: tuple[int, int] = (1961, 1990),
+        metric: str = "temperature_mean",
         settings: dict = None,
     ):
         # Call the base class constructor using super()
-        super().__init__(df_t, year, reference_period, settings)
+        super().__init__(df_t, year, reference_period, metric, settings)
         self.fig = None
 
     def set_plot_styles(self):
