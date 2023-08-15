@@ -34,7 +34,7 @@ def get_form_defaults() -> dict:
         "highlight_min": 1,
         "metric": "temperature_mean",
         "plot_type": "interactive",
-        "units": "metric",
+        "system": "metric",
         "smooth": 3,
         "peak_method": "mean",
         "peak_alpha": True,
@@ -77,7 +77,7 @@ def get_query_params() -> dict:
         "highlight_max",
         "highlight_min",
         "metric",
-        "units",
+        "system",
         "smooth",
         "peak_method",
         "peak_alpha",
@@ -142,8 +142,8 @@ def get_query_params() -> dict:
         elif key in ["peak_alpha", "alternate_months"] and isinstance(value, list):
             params[key] = " ".join(value).split("-", maxsplit=1)[0] != "false"
 
-        # Check units
-        elif key == "units":
+        # Check unit system
+        elif key == "system":
             params[key] = " ".join(value)
             if params[key] != "imperial":
                 remove_keys.append(key)
@@ -187,7 +187,7 @@ def create_share_url(params: dict) -> str:
         "highlight_max",
         "highlight_min",
         "metric",
-        "units",
+        "system",
         "smooth",
         "peak_method",
         "peak_alpha",
@@ -426,15 +426,15 @@ def build_form(method: str = "by_name", params: dict = None) -> dict:
             )
 
             # Selection for unit system
-            units = ["metric", "imperial"]
-            units_names = ["Metric System (°C, mm)", "Imperial System (°F, In)"]
+            system = ["metric", "imperial"]
+            system_names = ["Metric (°C, mm)", "Imperial (°F, In)"]
 
-            selected_units = st.selectbox(
-                "Units:",
-                units_names,
-                index=units.index(defaults["units"]),
+            selected_system = st.selectbox(
+                "Unit system:",
+                system_names,
+                index=system.index(defaults["system"]),
             )
-            form_values["units"] = units[units_names.index(selected_units)]
+            form_values["system"] = system[system_names.index(selected_system)]
 
             # Slider to apply LOWESS smoothing
             form_values["smooth"] = st.slider(
@@ -555,20 +555,6 @@ def process_form(form_values: dict) -> dict:
             "frac": frac_values[form_values["smooth"]],
         }
 
-    # Define units to be used
-    units = {
-        "metric": {"temperature": "°C", "precipitation": "mm"},
-        "imperial": {"temperature": "°F", "precipitation": "In"},
-    }
-
-    # Set unit for temperature graphs
-    if "temperature" in form_values["metric"]["name"]:
-        form_values["metric"]["unit"] = units[form_values["units"]]["temperature"]
-
-    # Set unit for precipitation graphs
-    if "precipitation" in form_values["metric"]["name"]:
-        form_values["metric"]["unit"] = units[form_values["units"]]["precipitation"]
-
     # Setting for alternating background colors for months
     form_values["alternate_months"] = {"apply": form_values["alternate_months"]}
 
@@ -609,7 +595,7 @@ def download_data(inputs: dict) -> pd.DataFrame():
             year=inputs["year"],
             reference_period=inputs["ref_period"],
             metric=inputs["metric"]["data"],
-            units=inputs["units"],
+            units=inputs["system"],
         )
 
         # Get last available date and save it

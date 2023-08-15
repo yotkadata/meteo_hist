@@ -268,7 +268,6 @@ class MeteoHist:
                 "title": "Mean temperatures",
                 "subtitle": "Compared to historical daily mean temperatures",
                 "description": "Mean Temperature",
-                "unit": "°C",
                 "yaxis_label": "Temperature",
                 "colors": {
                     "cmap_above": "YlOrRd",
@@ -283,6 +282,7 @@ class MeteoHist:
                 "even_alpha": 0.3,
             },
             "fill_percentiles": "#f8f8f8",
+            "system": "metric",
         }
 
         # Update default settings if a settings dict was provided
@@ -501,7 +501,6 @@ class MeteoHist:
                 "title": "Mean temperatures",
                 "subtitle": "Compared to historical daily mean temperatures",
                 "description": "Mean Temperature",
-                "unit": "°C",
                 "yaxis_label": "Temperature",
                 "colors": {
                     "cmap_above": "YlOrRd",
@@ -514,7 +513,6 @@ class MeteoHist:
                 "title": "Minimum temperatures",
                 "subtitle": "Compared to average of historical daily minimum temperatures",
                 "description": "Average of minimum temperatures",
-                "unit": "°C",
                 "yaxis_label": "Temperature",
                 "colors": {
                     "cmap_above": "YlOrRd",
@@ -527,7 +525,6 @@ class MeteoHist:
                 "title": "Maximum temperatures",
                 "subtitle": "Compared to average of historical daily maximum temperatures",
                 "description": "Average of maximum temperatures",
-                "unit": "°C",
                 "yaxis_label": "Temperature",
                 "colors": {
                     "cmap_above": "YlOrRd",
@@ -540,7 +537,6 @@ class MeteoHist:
                 "title": "Precipitation",
                 "subtitle": "30-day Rolling Average compared to historical values",
                 "description": "Mean of Rolling Average",
-                "unit": "mm",
                 "yaxis_label": "Precipitation",
                 "colors": {
                     "cmap_above": "YlGnBu",
@@ -553,7 +549,6 @@ class MeteoHist:
                 "title": "Precipitation",
                 "subtitle": "Cumuluated precipitation compared to historical values",
                 "description": "Mean of cumulated Precipitation",
-                "unit": "mm",
                 "yaxis_label": "Precipitation",
                 "colors": {
                     "cmap_above": "YlGnBu",
@@ -563,6 +558,38 @@ class MeteoHist:
         }
 
         return defaults_by_metric[name]
+
+    def get_units(self, metric_name: str = None, system: str = None) -> str:
+        """
+        Get units for a metric in a given system.
+
+        Parameters
+        ----------
+        metric_name: str
+            Name of the metric to get units for.
+            Possible values contain "temperature" or "precipitation".
+        system: str
+            System to get units for. Possible values: metric, imperial.
+        """
+        if metric_name is None:
+            metric_name = self.settings["metric"]["name"]
+
+        if system is None:
+            system = self.settings["system"]
+
+        units_by_metric = {
+            "temperature": {"metric": "°C", "imperial": "°F"},
+            "precipitation": {"metric": "mm", "imperial": "in"},
+        }
+
+        # Set defaults
+        metric_name = (
+            "precipitation" if "precipitation" in metric_name else "temperature"
+        )
+        if system not in units_by_metric[metric_name]:
+            system = "metric"
+
+        return units_by_metric[metric_name][system]
 
     def create_file_path(self, prefix: str = None, suffix: str = None) -> str:
         """

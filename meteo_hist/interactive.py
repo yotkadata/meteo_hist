@@ -172,7 +172,7 @@ class MeteoHistInteractive(MeteoHist):
                     showlegend=False,
                     hovertemplate=(
                         "%{y:.1f}"
-                        f"{self.settings['metric']['unit']}"
+                        f"{super().get_units()}"
                         f"<extra><b>95th percentile {self.reference_period[0]}-"
                         f"{self.reference_period[1]}</b></extra>"
                     ),
@@ -186,7 +186,7 @@ class MeteoHistInteractive(MeteoHist):
                     showlegend=False,
                     hovertemplate=(
                         "%{y:.1f}"
-                        f"{self.settings['metric']['unit']}"
+                        f"{super().get_units()}"
                         f"<extra><b>5th percentile {self.reference_period[0]}-"
                         f"{self.reference_period[1]}</b></extra>"
                     ),
@@ -210,7 +210,7 @@ class MeteoHistInteractive(MeteoHist):
                 showlegend=False,
                 hovertemplate=(
                     "%{y:.1f}"
-                    f"{self.settings['metric']['unit']}"
+                    f"{super().get_units()}"
                     f"<extra><b>Mean {self.reference_period[0]}-"
                     f"{self.reference_period[1]}</b></extra>"
                 ),
@@ -248,9 +248,7 @@ class MeteoHistInteractive(MeteoHist):
                         opacity=opacity,
                     ),
                     showlegend=False,
-                    hovertemplate=(
-                        "%{y:.1f}" f"{self.settings['metric']['unit']}<extra></extra>"
-                    ),
+                    hovertemplate=("%{y:.1f}" f"{super().get_units()}<extra></extra>"),
                 )
             )
 
@@ -264,9 +262,7 @@ class MeteoHistInteractive(MeteoHist):
                 showlegend=False,
                 mode="markers",
                 name="Hoverinfo current date",
-                hovertemplate=(
-                    "%{y:.1f}" f"{self.settings['metric']['unit']}" f"<extra></extra>"
-                ),
+                hovertemplate=("%{y:.1f}" f"{super().get_units()}" f"<extra></extra>"),
                 marker=dict(
                     color=colors,  # This color will be shown on hover
                     opacity=0,  # Hide the marker
@@ -366,7 +362,7 @@ class MeteoHistInteractive(MeteoHist):
                 y=df_sorted[f"{self.year}"].iloc[i],
                 text=(
                     f"{conf['prefix']}{df_sorted[f'{self.year}_diff'].values[i]:.1f}"
-                    f"{self.settings['metric']['unit']}"
+                    f"{super().get_units()}"
                 ),
                 showarrow=False,
                 xanchor="center",
@@ -621,7 +617,7 @@ class MeteoHistInteractive(MeteoHist):
             yaxis=dict(
                 range=super().get_y_limits(),
                 showgrid=True,
-                ticksuffix=self.settings["metric"]["unit"],
+                ticksuffix=super().get_units(),
             ),
         )
 

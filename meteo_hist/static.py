@@ -55,7 +55,7 @@ class MeteoHistStatic(MeteoHist):
 
         # Add y-axis label
         axes.set_ylabel(
-            f"{self.settings['metric']['yaxis_label']} ({self.settings['metric']['unit']})"
+            f"{self.settings['metric']['yaxis_label']} ({super().get_units()})"
         )
 
         # Add horizontal grid lines to the plot
@@ -447,7 +447,7 @@ class MeteoHistStatic(MeteoHist):
                 zorder=3,
             )
             axes.annotate(
-                f"+{df_max[f'{self.year}_diff'].values[i]:.1f}{self.settings['metric']['unit']}",
+                f"+{df_max[f'{self.year}_diff'].values[i]:.1f}{super().get_units()}",
                 xy=(
                     df_max.index[i],
                     df_max[f"{self.year}"].values[i],
