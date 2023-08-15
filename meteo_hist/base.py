@@ -456,10 +456,6 @@ class MeteoHist:
             drop=True
         )
 
-        # Convert to dtypes to numeric to avoid errors when all values are None
-        for position in ["above", "below"]:
-            df_g[f"{year}_{position}"] = pd.to_numeric(df_g[f"{year}_{position}"])
-
         # Add column that holds the difference between the year's value and the mean
         df_g[f"{year}_diff"] = df_g[f"{year}"] - df_g["mean"]
 
