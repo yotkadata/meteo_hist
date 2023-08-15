@@ -440,7 +440,7 @@ class MeteoHistStatic(MeteoHist):
         for i in range(self.settings["highlight_max"]):
             axes.scatter(
                 df_max.index[i],
-                df_max[f"{self.year}"].values[i],
+                df_max[f"{self.year}_above"].values[i],
                 facecolors="none",
                 edgecolors="black",
                 linewidths=1,
@@ -451,7 +451,7 @@ class MeteoHistStatic(MeteoHist):
                 f"+{df_max[f'{self.year}_diff'].values[i]:.1f}{super().get_units()}",
                 xy=(
                     df_max.index[i],
-                    df_max[f"{self.year}"].values[i],
+                    df_max[f"{self.year}_above"].values[i],
                 ),
                 # Use offset for annotation text
                 xytext=(0, 10),
