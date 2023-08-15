@@ -495,12 +495,33 @@ class MeteoHist:
 
         # Define default values by metric
         defaults_by_metric = {
+            "temperature_mean": {
+                "name": "temperature_mean",
+                "data": "temperature_2m_mean",
+                "title": "Mean temperatures",
+                "subtitle": "Compared to historical daily mean temperatures",
+                "description": "Mean Temperature",
+                "unit": "°C",
+                "yaxis_label": "Temperature",
+                "colors": {
+                    "fill_percentiles": "#f8f8f8",
+                    "cmap_above": "YlOrRd",
+                    "cmap_below": "YlGnBu_r",
+                },
+            },
             "temperature_min": {
                 "name": "temperature_min",
                 "data": "temperature_2m_min",
                 "title": "Minimum temperatures",
                 "subtitle": "Compared to average of historical daily minimum temperatures",
                 "description": "Average of minimum temperatures",
+                "unit": "°C",
+                "yaxis_label": "Temperature",
+                "colors": {
+                    "fill_percentiles": "#f8f8f8",
+                    "cmap_above": "YlOrRd",
+                    "cmap_below": "YlGnBu_r",
+                },
             },
             "temperature_max": {
                 "name": "temperature_max",
@@ -508,6 +529,13 @@ class MeteoHist:
                 "title": "Maximum temperatures",
                 "subtitle": "Compared to average of historical daily maximum temperatures",
                 "description": "Average of maximum temperatures",
+                "unit": "°C",
+                "yaxis_label": "Temperature",
+                "colors": {
+                    "fill_percentiles": "#f8f8f8",
+                    "cmap_above": "YlOrRd",
+                    "cmap_below": "YlGnBu_r",
+                },
             },
             "precipitation_rolling": {
                 "name": "precipitation_rolling",
