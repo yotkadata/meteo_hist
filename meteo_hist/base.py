@@ -345,7 +345,7 @@ class MeteoHist:
     def normalize_diff(self, series: pd.Series, fill_na: bool = True) -> pd.Series:
         """
         Normalize a series to the range [0, 1].
-        Initial values below 0  result between [0, 0.5] and
+        Initial values below 0 result between [0, 0.5] and
         values above 0 result between [0.5, 1].
         Values will later be used for the colorscale of the plot.
         """
@@ -362,18 +362,24 @@ class MeteoHist:
         series_norm = series.copy()
 
         # Normalize negative values to [0, 0.5] using the mask
-        max_value = series_norm[negative_mask].max()
-        min_value = series_norm[negative_mask].min()
-        series_norm[negative_mask] = (
-            (series_norm[negative_mask] - min_value) / (max_value - min_value) * 0.5
-        )
+        if len(series_norm[negative_mask]) > 0:
+            max_value = series_norm[negative_mask].max()
+            min_value = series_norm[negative_mask].min()
+            series_norm[negative_mask] = (
+                (series_norm[negative_mask] - min_value) / (max_value - min_value) * 0.5
+            )
+        else:
+            series_norm[negative_mask] = np.full_like(series_norm[negative_mask], 0)
 
         # Normalize positive values to [0.5, 1] using the mask
-        max_value = series_norm[positive_mask].max()
-        min_value = series_norm[positive_mask].min()
-        series_norm[positive_mask] = (series_norm[positive_mask] - min_value) / (
-            max_value - min_value
-        ) * 0.5 + 0.5
+        if len(series_norm[positive_mask]) > 0:
+            max_value = series_norm[positive_mask].max()
+            min_value = series_norm[positive_mask].min()
+            series_norm[positive_mask] = (series_norm[positive_mask] - min_value) / (
+                max_value - min_value
+            ) * 0.5 + 0.5
+        else:
+            series_norm[positive_mask] = np.full_like(series_norm[positive_mask], 0.5)
 
         return pd.Series(series_norm)
 
