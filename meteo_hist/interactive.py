@@ -334,25 +334,30 @@ class MeteoHistInteractive(MeteoHist):
         }
         conf = conf_options[how]
 
-        # By default, sort by difference between year's value and mean
-        df_sorted = (
-            self.df_t.sort_values(f"{self.year}_diff", ascending=conf["asc"])
-            .loc[: self.settings[conf["setting"]]]
-            .copy()
-        )
+        # Create a copy of the dataframe to sort
+        df_sorted = self.df_t.copy()
 
-        # If peak method is percentile, sort by difference between year's value and p95
-        if self.settings["peak_method"] == "percentile":
-            df_sorted = self.df_t.copy()
-            df_sorted[f"{self.year}_diff_minmax"] = (
-                df_sorted[f"{self.year}"] - df_sorted[conf["ref"]]
-            )
+        if self.settings["peak_method"] != "percentile":
+            # By default, sort by difference between year's value and mean
+            sort_column = f"{self.year}_diff"
+        else:
+            # If peak method is percentile, sort by difference between year's value and p95/p05
+            sort_column = f"{self.year}_diff_minmax"
+            df_sorted[sort_column] = df_sorted[f"{self.year}"] - df_sorted[conf["ref"]]
 
-            df_sorted = (
-                df_sorted.sort_values(f"{self.year}_diff_minmax", ascending=conf["asc"])
-                .loc[: self.settings[conf["setting"]]]
-                .copy()
-            )
+        df_sorted = self.df_t.sort_values(sort_column, ascending=conf["asc"])
+
+        # Remove values that are too close together (min_distance)
+        for i in range(self.settings[conf["setting"]]):
+            current = df_sorted["dayofyear"].iloc[i]
+            min_distance = 5  # Values closer than this will be removed
+            range_around_current = [
+                day
+                for day in range(current - min_distance, current + min_distance + 1)
+                if day != current
+            ]
+            # Filter out values that are too close to the current one
+            df_sorted = df_sorted[~df_sorted["dayofyear"].isin(range_around_current)]
 
         for i in range(self.settings[conf["setting"]]):
             # Add text
