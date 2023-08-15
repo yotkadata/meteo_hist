@@ -650,7 +650,11 @@ def create_graph(data: pd.DataFrame, inputs: dict) -> None:
 
             else:
                 # Calculate width and height based on viewport width
-                width = st.session_state["viewport_width"] * 0.74
+                width = (
+                    st.session_state["viewport_width"]
+                    if st.session_state["viewport_width"] is not None
+                    else 1200
+                )
                 height = width * 3 / 5
 
                 # Instantiate the plot object
@@ -702,11 +706,6 @@ if "form_defaults" not in st.session_state:
 if "base_url" not in st.session_state:
     st.session_state["base_url"] = "https://yotka.org/meteo-hist/"
 
-# Save viewport width to session state
-st.session_state["viewport_width"] = streamlit_js_eval(
-    js_expressions="window.innerWidth", key="ViewportWidthPrint"
-)
-
 col1, col2 = st.columns([1, 3])
 
 with col1:
@@ -723,8 +722,7 @@ with col1:
     query_params = get_query_params()
 
     if len(query_params) > 0:
-        # Remove all query parameters from URL
-        st.experimental_set_query_params()
+        # st.experimental_set_query_params()
         st.session_state["form_defaults"] = deep_update(
             st.session_state["form_defaults"], query_params
         )
@@ -755,6 +753,8 @@ with col1:
     if active_tab != st.session_state["form_defaults"]["method"]:
         # Reset form defaults once method is changed
         st.session_state["form_defaults"] = get_form_defaults()
+        # Remove all query parameters from URL
+        st.experimental_set_query_params()
 
     # Build form
     input_values = build_form(method=active_tab, params=query_params)
@@ -773,6 +773,11 @@ with col1:
 
 with col2:
     plot_placeholder = st.empty()
+
+    # Save viewport width to session state
+    st.session_state["viewport_width"] = streamlit_js_eval(
+        js_expressions="window.innerWidth", key="ViewportWidth"
+    )
 
     # Show a random graph on start (but not when the user clicks the "Create" button)
     if "last_generated" not in st.session_state and input_values is None:
