@@ -405,33 +405,33 @@ class MeteoHistInteractive(MeteoHist):
             arrow_x = dt.datetime.strptime(f"{self.year}-04-15", "%Y-%m-%d")
             arrow_y = self.df_t[self.df_t["date"] == arrow_x]["mean"].values[0]
 
-            # Position text center mid March
-            # between maximum value for January to March and y axis maximum
+            # Position text center mid March at 1/6 of the distance
+            # between maximum value for February to April and y axis maximum
             text_x = dt.datetime.strptime(f"{self.year}-03-15", "%Y-%m-%d")
-            max_value = super().get_min_max((1, 90))
-            text_y = (max_value + y_max) / 2
+            max_value = super().get_min_max((46, 105))
+            text_y = max_value + (y_max - max_value) / 6
 
         elif self.settings["metric"]["name"] == "precipitation_rolling":
             # Position arrow on the mean line in mid March
             arrow_x = dt.datetime.strptime(f"{self.year}-03-15", "%Y-%m-%d")
             arrow_y = self.df_t[self.df_t["date"] == arrow_x]["mean"].values[0]
 
-            # Position text center in February
-            # between maximum value for January to March and y axis maximum
+            # Position text center in February at 1/6 of the distance
+            # between maximum value for January to February and y axis maximum
             text_x = dt.datetime.strptime(f"{self.year}-02-01", "%Y-%m-%d")
             max_value = super().get_min_max((1, 90))
-            text_y = (max_value + y_max) / 2
+            text_y = max_value + (y_max - max_value) / 6
 
         else:
             # Position arrow on the mean line in March
-            arrow_x = dt.datetime.strptime(f"{self.year}-03-01", "%Y-%m-%d")
+            arrow_x = dt.datetime.strptime(f"{self.year}-03-15", "%Y-%m-%d")
             arrow_y = self.df_t[self.df_t["date"] == arrow_x]["mean"].values[0]
 
-            # Position text center in mid April
-            # between minimum value for Feb to June and y axis minimum
+            # Position text center in mid April at 1/3 of the distance
+            # between minimum value for March to May and y axis minimum
             text_x = dt.datetime.strptime(f"{self.year}-04-15", "%Y-%m-%d")
-            min_value = super().get_min_max((32, 181), which="min")
-            text_y = (min_value + y_min) / 2
+            min_value = super().get_min_max((74, 135), which="min")
+            text_y = min_value - (min_value - y_min) / 3
 
         fig.add_annotation(
             x=arrow_x,
@@ -463,11 +463,11 @@ class MeteoHistInteractive(MeteoHist):
             mean, p05 = self.df_t.iloc[idx]["mean"], self.df_t.iloc[idx]["p05"]
             arrow_y = p05 + (mean - p05) / 6
 
-            # Position text center mid October
+            # Position text center mid October at 1/3 of the distance
             # between minimum value for September to November and y axis minimum
             text_x = dt.datetime.strptime(f"{self.year}-10-15", "%Y-%m-%d")
-            min_value = super().get_min_max((244, 334), which="min")
-            text_y = (min_value + y_min) / 2
+            min_value = super().get_min_max((258, 319), which="min")
+            text_y = min_value - (min_value - y_min) / 3
 
         elif self.settings["metric"]["name"] == "precipitation_rolling":
             # Position arrow 1/6 into the p05/p95 area in mid September
@@ -476,11 +476,11 @@ class MeteoHistInteractive(MeteoHist):
             mean, p95 = self.df_t.iloc[idx]["mean"], self.df_t.iloc[idx]["p95"]
             arrow_y = p95 - (p95 - mean) / 6
 
-            # Position text center mid October
+            # Position text center mid October at 1/3 of the distance
             # between maximum value for September to November and y axis maximum
             text_x = dt.datetime.strptime(f"{self.year}-10-15", "%Y-%m-%d")
-            max_value = super().get_min_max((244, 334))
-            text_y = (max_value + y_max) / 2
+            max_value = super().get_min_max((258, 319))
+            text_y = max_value + (y_max - max_value) / 3
 
         else:
             # Position arrow 1/6 into the p05/p95 area in mid October
@@ -489,11 +489,11 @@ class MeteoHistInteractive(MeteoHist):
             mean, p05 = self.df_t.iloc[idx]["mean"], self.df_t.iloc[idx]["p05"]
             arrow_y = p05 + (mean - p05) / 6
 
-            # Position text center mid September
+            # Position text center mid September at 1/3 of the distance
             # between minimum value for August to October and y axis minimum
             text_x = dt.datetime.strptime(f"{self.year}-09-15", "%Y-%m-%d")
-            min_value = super().get_min_max((213, 304), which="min")
-            text_y = (min_value + y_min) / 2
+            min_value = super().get_min_max((227, 288), which="min")
+            text_y = min_value - (min_value - y_min) / 3
 
         fig.add_annotation(
             x=arrow_x,
@@ -619,6 +619,7 @@ class MeteoHistInteractive(MeteoHist):
                 ticklabelmode="period",  # Center tick labels
             ),
             yaxis=dict(
+                range=super().get_y_limits(),
                 showgrid=True,
                 ticksuffix=self.settings["metric"]["unit"],
             ),
