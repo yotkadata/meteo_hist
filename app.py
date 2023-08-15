@@ -30,7 +30,8 @@ def get_form_defaults() -> dict:
         "display_name": "",
         "year": dt.datetime.now().year,
         "ref_period": (1961, 1990),
-        "highlight_max": 1,
+        "highlight_max": 0,
+        "highlight_min": 0,
         "metric": "temperature_mean",
         "plot_type": "interactive",
         "units": "metric",
@@ -74,6 +75,7 @@ def get_query_params() -> dict:
         "year",
         "ref_period",
         "highlight_max",
+        "highlight_min",
         "metric",
         "units",
         "smooth",
@@ -105,14 +107,19 @@ def get_query_params() -> dict:
                 remove_keys.append(key)
 
         # Check keys with int values
-        elif key in ["year", "highlight_max", "smooth"] and isinstance(value, list):
+        elif key in ["year", "highlight_max", "highlight_min", "smooth"] and isinstance(
+            value, list
+        ):
             try:
                 params[key] = int(value[0])
                 if key == "year" and (
                     params[key] < 1940 or params[key] > dt.datetime.now().year
                 ):
                     remove_keys.append(key)
-                if key == "highlight_max" and not 0 <= params[key] <= 5:
+                if (
+                    key in ["highlight_max", "highlight_min"]
+                    and not 0 <= params[key] <= 5
+                ):
                     remove_keys.append(key)
                 if key == "smooth" and not 0 <= params[key] <= 3:
                     remove_keys.append(key)
@@ -178,6 +185,7 @@ def create_share_url(params: dict) -> str:
         "year",
         "ref_period",
         "highlight_max",
+        "highlight_min",
         "metric",
         "units",
         "smooth",
@@ -338,18 +346,6 @@ def build_form(method: str = "by_name", params: dict = None) -> dict:
                     periods.index(select_ref_period)
                 ]
 
-        # Number of peaks to annotate
-        form_values["highlight_max"] = st.slider(
-            "Peaks to be annotated:",
-            min_value=0,
-            max_value=5,
-            value=defaults["highlight_max"],
-            help="""
-                Number of maximum peaks to be annotated. If peaks are close together,
-                the text might overlap. In this case, reduce the number of peaks.
-                """,
-        )
-
         # Selector for metric
         metrics = [
             {
@@ -391,6 +387,30 @@ def build_form(method: str = "by_name", params: dict = None) -> dict:
             ),
         )
         form_values["metric"] = metrics[metrics_names.index(selected_metric)]
+
+        # Number of max peaks to annotate
+        form_values["highlight_max"] = st.slider(
+            "Maximum peaks to be annotated:",
+            min_value=0,
+            max_value=5,
+            value=defaults["highlight_max"],
+            help="""
+                Number of peaks above the mean to be annotated. If peaks are close together,
+                the text might overlap. In this case, reduce the number of peaks.
+                """,
+        )
+
+        # Number of min peaks to annotate
+        form_values["highlight_min"] = st.slider(
+            "Minimum peaks to be annotated:",
+            min_value=0,
+            max_value=5,
+            value=defaults["highlight_min"],
+            help="""
+                Number of peaks below the mean to be annotated. If peaks are close together,
+                the text might overlap. In this case, reduce the number of peaks.
+                """,
+        )
 
         with st.expander("Advanced settings"):
             # Selection for interactive vs static plot

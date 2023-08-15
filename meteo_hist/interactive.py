@@ -305,49 +305,76 @@ class MeteoHistInteractive(MeteoHist):
 
         return fig
 
-    def annotate_max_values(self, fig: go.Figure) -> go.Figure:
+    def annotate_peaks(self, fig: go.Figure, how: str = "max") -> go.Figure:
         """
-        Annotate maximum values.
+        Annotate maximum or minimum values.
         """
+        if how not in ["max", "min"]:
+            return fig
+
+        conf_options = {
+            "max": {
+                "text": "Maximum",
+                "setting": "highlight_max",
+                "ref": "p95",
+                "asc": False,
+                "prefix": "+",
+                "yanchor": "bottom",
+                "yshift": 10,
+            },
+            "min": {
+                "text": "Minimum",
+                "setting": "highlight_min",
+                "ref": "p05",
+                "asc": True,
+                "prefix": "",
+                "yanchor": "top",
+                "yshift": -10,
+            },
+        }
+        conf = conf_options[how]
+
         # By default, sort by difference between year's value and mean
-        df_max = (
-            self.df_t.sort_values(f"{self.year}_diff", ascending=False)
-            .loc[: self.settings["highlight_max"]]
+        df_sorted = (
+            self.df_t.sort_values(f"{self.year}_diff", ascending=conf["asc"])
+            .loc[: self.settings[conf["setting"]]]
             .copy()
         )
 
         # If peak method is percentile, sort by difference between year's value and p95
         if self.settings["peak_method"] == "percentile":
-            df_max = self.df_t.copy()
-            df_max[f"{self.year}_diffp95"] = df_max[f"{self.year}"] - df_max["p95"]
+            df_sorted = self.df_t.copy()
+            df_sorted[f"{self.year}_diff_minmax"] = (
+                df_sorted[f"{self.year}"] - df_sorted[conf["ref"]]
+            )
 
-            df_max = (
-                df_max.sort_values(f"{self.year}_diffp95", ascending=False)
-                .loc[: self.settings["highlight_max"]]
+            df_sorted = (
+                df_sorted.sort_values(f"{self.year}_diff_minmax", ascending=conf["asc"])
+                .loc[: self.settings[conf["setting"]]]
                 .copy()
             )
 
-        for i in range(self.settings["highlight_max"]):
+        for i in range(self.settings[conf["setting"]]):
             # Add text
             fig.add_annotation(
-                x=df_max["date"].iloc[i],
-                y=df_max[f"{self.year}_above"].iloc[i],
+                x=df_sorted["date"].iloc[i],
+                y=df_sorted[f"{self.year}"].iloc[i],
                 text=(
-                    f"+{df_max[f'{self.year}_diff'].values[i]:.1f}"
+                    f"{conf['prefix']}{df_sorted[f'{self.year}_diff'].values[i]:.1f}"
                     f"{self.settings['metric']['unit']}"
                 ),
                 showarrow=False,
                 xanchor="center",
-                yanchor="bottom",
-                yshift=10,
+                yanchor=conf["yanchor"],
+                yshift=conf["yshift"],
             )
             # Add circles
             fig.add_trace(
                 go.Scatter(
-                    x=[df_max["date"].iloc[i]],
-                    y=[df_max[f"{self.year}_above"].iloc[i]],
+                    x=[df_sorted["date"].iloc[i]],
+                    y=[df_sorted[f"{self.year}"].iloc[i]],
                     mode="markers",
-                    name=f"Maximum {i+1}",
+                    name=f"{conf['text']} {i+1}",
                     marker=dict(
                         color="rgba(255,255,255,0)",
                         size=10,
@@ -627,7 +654,11 @@ class MeteoHistInteractive(MeteoHist):
 
         # Annotate maximum values
         if self.settings["highlight_max"] > 0:
-            fig = self.annotate_max_values(fig)
+            fig = self.annotate_peaks(fig, how="max")
+
+        # Annotate minimum values
+        if self.settings["highlight_min"] > 0:
+            fig = self.annotate_peaks(fig, how="min")
 
         # Add lat/lon and last date info
         fig = self.add_data_info(fig)

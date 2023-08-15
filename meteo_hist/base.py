@@ -250,7 +250,8 @@ class MeteoHist:
                 "output": "output",
             },
             "num_files_to_keep": 100,
-            "highlight_max": 1,
+            "highlight_max": 0,
+            "highlight_min": 0,
             "peak_alpha": True,
             "peak_method": "mean",
             "smooth": {
