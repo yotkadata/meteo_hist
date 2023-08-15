@@ -145,7 +145,7 @@ class MeteoHistInteractive(MeteoHist):
                     y=self.df_t["p05"],
                     name="Area between p05 and p95",
                     fill="tonexty",
-                    fillcolor="#f8f8f8",
+                    fillcolor=self.settings["fill_percentiles"],
                     # Make line invisible
                     line_color="rgba(0,0,0,0)",
                     showlegend=False,

@@ -167,7 +167,7 @@ class MeteoHistStatic(MeteoHist):
             self.df_t.index,
             self.df_t[f"p{percentiles[0]}"],
             self.df_t[f"p{percentiles[1]}"],
-            color=self.settings["metric"]["colors"]["fill_percentiles"],
+            color=self.settings["fill_percentiles"],
         )
 
         for percentile in percentiles:

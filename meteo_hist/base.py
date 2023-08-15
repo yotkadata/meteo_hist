@@ -271,7 +271,6 @@ class MeteoHist:
                 "unit": "°C",
                 "yaxis_label": "Temperature",
                 "colors": {
-                    "fill_percentiles": "#f8f8f8",
                     "cmap_above": "YlOrRd",
                     "cmap_below": "YlGnBu_r",
                 },
@@ -283,6 +282,7 @@ class MeteoHist:
                 "even_color": "#f8f8f8",
                 "even_alpha": 0.3,
             },
+            "fill_percentiles": "#f8f8f8",
         }
 
         # Update default settings if a settings dict was provided
@@ -504,7 +504,6 @@ class MeteoHist:
                 "unit": "°C",
                 "yaxis_label": "Temperature",
                 "colors": {
-                    "fill_percentiles": "#f8f8f8",
                     "cmap_above": "YlOrRd",
                     "cmap_below": "YlGnBu_r",
                 },
@@ -518,7 +517,6 @@ class MeteoHist:
                 "unit": "°C",
                 "yaxis_label": "Temperature",
                 "colors": {
-                    "fill_percentiles": "#f8f8f8",
                     "cmap_above": "YlOrRd",
                     "cmap_below": "YlGnBu_r",
                 },
@@ -532,7 +530,6 @@ class MeteoHist:
                 "unit": "°C",
                 "yaxis_label": "Temperature",
                 "colors": {
-                    "fill_percentiles": "#f8f8f8",
                     "cmap_above": "YlOrRd",
                     "cmap_below": "YlGnBu_r",
                 },
