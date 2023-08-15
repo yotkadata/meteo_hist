@@ -456,18 +456,6 @@ class MeteoHist:
             drop=True
         )
 
-        # Add column with year's value above mean
-        df_g[f"{year}_above"] = df_g.apply(
-            lambda x: x[f"{year}"] if x[f"{year}"] > x["mean"] else None,
-            axis=1,
-        )
-
-        # Add column with year's value below mean
-        df_g[f"{year}_below"] = df_g.apply(
-            lambda x: x[f"{year}"] if x[f"{year}"] < x["mean"] else None,
-            axis=1,
-        )
-
         # Convert to dtypes to numeric to avoid errors when all values are None
         for position in ["above", "below"]:
             df_g[f"{year}_{position}"] = pd.to_numeric(df_g[f"{year}_{position}"])
