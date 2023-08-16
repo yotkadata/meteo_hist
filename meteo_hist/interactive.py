@@ -341,7 +341,7 @@ class MeteoHistInteractive(MeteoHist):
             sort_column = f"{self.year}_diff_minmax"
             df_sorted[sort_column] = df_sorted[f"{self.year}"] - df_sorted[conf["ref"]]
 
-        df_sorted = self.data.sort_values(sort_column, ascending=conf["asc"])
+        df_sorted = df_sorted.sort_values(sort_column, ascending=conf["asc"])
 
         # Remove values that are too close together (min_distance)
         for i in range(self.settings[conf["setting"]]):

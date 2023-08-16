@@ -44,7 +44,8 @@ class MeteoHist:
         """
         self.coords = coords
         self.metric = metric
-        self.settings = self.update_settings(settings)
+        self.settings = None
+        self.update_settings(settings)
         self.year = year if year is not None else dt.datetime.now().year
         self.data_raw = self.get_data(coords)
         self.data = self.transform_data(self.data_raw, self.year, reference_period)
@@ -105,7 +106,27 @@ class MeteoHist:
         if settings["location_name"] is None:
             settings["location_name"] = self.get_location(self.coords)
 
-        return settings
+        # Copy old settings to compare later
+        old_settings = self.settings
+
+        # Save new settings
+        self.settings = settings
+
+        # Where necessary, download and/or transformf the data again to reflect settings changes
+        if isinstance(old_settings, dict):
+            # Changes that require downloading/transforming the data again
+            download_keys = ["system"]
+            transform_keys = ["metric", "system", "smooth"]
+
+            # Check if any values for keys in download_keys are different
+            if any(settings[key] != old_settings[key] for key in download_keys):
+                self.data_raw = self.get_data()
+
+            # Check if any values for keys in transform_keys are different
+            if any(settings[key] != old_settings[key] for key in transform_keys):
+                self.data = self.transform_data(
+                    self.data_raw, self.year, self.reference_period
+                )
 
     def dayofyear_to_date(
         self, year: int, dayofyear: int, adj_leap: bool = False
@@ -318,14 +339,11 @@ class MeteoHist:
         # Add column that holds the difference between the year's value and the mean
         df_g[f"{year}_diff"] = df_g[f"{year}"] - df_g["mean"]
 
-        if self.settings["peak_alpha"]:
-            # Add column that holds normalized difference between -1 and 1
-            df_g[f"{year}_alpha"] = df_g.apply(
-                lambda x: 1
-                if x[f"{year}"] > x["p95"] or x[f"{year}"] < x["p05"]
-                else 0.6,
-                axis=1,
-            ).fillna(0)
+        # Add column that holds alpha values for the year's value to highlight outliers
+        df_g[f"{year}_alpha"] = df_g.apply(
+            lambda x: 1 if x[f"{year}"] > x["p95"] or x[f"{year}"] < x["p05"] else 0.6,
+            axis=1,
+        ).fillna(0)
 
         # Add a column with the date
         df_g["date"] = df_g["dayofyear"].apply(
