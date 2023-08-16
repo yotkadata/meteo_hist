@@ -47,7 +47,7 @@ class MeteoHist:
         self.settings = self.update_settings(settings)
         self.year = year if year is not None else dt.datetime.now().year
         self.data_raw = self.get_data(coords)
-        self.df_t = self.transform_df(self.data_raw, self.year, reference_period)
+        self.data = self.transform_data(self.data_raw, self.year, reference_period)
         self.reference_period = reference_period
         self.ref_nans = 0
 
@@ -208,8 +208,8 @@ class MeteoHist:
 
         return df_raw
 
-    def transform_df(
-        self, df_t: pd.DataFrame, year: int, ref_period: tuple[int, int]
+    def transform_data(
+        self, df_raw: pd.DataFrame, year: int, ref_period: tuple[int, int]
     ) -> pd.DataFrame:
         """
         Transforms the dataframe to be used for plotting.
@@ -227,7 +227,7 @@ class MeteoHist:
             """
             return np.nanpercentile(series, 95)
 
-        df_f = df_t.copy()
+        df_f = df_raw.copy()
 
         # Add columns with day of year and year
         df_f["dayofyear"] = df_f["date"].dt.dayofyear
@@ -342,12 +342,12 @@ class MeteoHist:
             minimum = 0
         else:
             # Get minimums of year's mean and 5th percentile
-            minimum = self.df_t[[f"{self.year}", "p05"]].min(axis=1).min()
+            minimum = self.data[[f"{self.year}", "p05"]].min(axis=1).min()
             # Subtract 5%
             minimum -= abs(minimum) * 0.05
 
         # Get maximum of year's mean and 95th percentile
-        maximum = self.df_t[[f"{self.year}", "p95"]].max(axis=1).max()
+        maximum = self.data[[f"{self.year}", "p95"]].max(axis=1).max()
         # Add 5%
         maximum += abs(maximum) * 0.05
 
@@ -381,7 +381,7 @@ class MeteoHist:
         else:
             metrics = ["p05", "mean", "p95", f"{self.year}"]
 
-        df_t = self.df_t[self.df_t["dayofyear"].between(period[0], period[1])][metrics]
+        df_t = self.data[self.data["dayofyear"].between(period[0], period[1])][metrics]
 
         # Return minimum or maximum value
         if which == "min":

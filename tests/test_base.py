@@ -93,7 +93,7 @@ def test_transform_df_values():
 
     # Transform data
     data_transformed = MeteoHist(df_raw, year=2020)
-    df_t = data_transformed.df_t
+    df_t = data_transformed.data
 
     # Pick some dates
     dates = ["2020-02-28", "2020-01-01", "2020-07-06", "2020-09-16", "2020-12-31"]

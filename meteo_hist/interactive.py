@@ -37,7 +37,7 @@ class MeteoHistInteractive(MeteoHist):
         Get the colorscale for the plot as a combination of two colormaps.
         """
         # Normalize difference to 0-1
-        diff = self.df_t[f"{self.year}_diff"]
+        diff = self.data[f"{self.year}_diff"]
 
         # Create masks for above and below mean
         mask_above = diff > 0
@@ -132,8 +132,8 @@ class MeteoHistInteractive(MeteoHist):
             [
                 # p95 trace used as upper bound
                 go.Scatter(
-                    x=self.df_t["date"],
-                    y=self.df_t["p95"],
+                    x=self.data["date"],
+                    y=self.data["p95"],
                     name="Percentile area upper bound (p95)",
                     # Make line invisible
                     line_color="rgba(0,0,0,0)",
@@ -142,8 +142,8 @@ class MeteoHistInteractive(MeteoHist):
                 ),
                 # Fill area between p05 and p95
                 go.Scatter(
-                    x=self.df_t["date"],
-                    y=self.df_t["p05"],
+                    x=self.data["date"],
+                    y=self.data["p05"],
                     name="Area between p05 and p95",
                     fill="tonexty",
                     fillcolor=self.settings["fill_percentiles"],
@@ -166,8 +166,8 @@ class MeteoHistInteractive(MeteoHist):
             [
                 # p95 trace
                 go.Scatter(
-                    x=self.df_t["date"],
-                    y=self.df_t["p95"],
+                    x=self.data["date"],
+                    y=self.data["p95"],
                     name="P95",
                     line=dict(color="#000", width=1, dash="dot"),
                     showlegend=False,
@@ -180,8 +180,8 @@ class MeteoHistInteractive(MeteoHist):
                 ),
                 # p05 trace
                 go.Scatter(
-                    x=self.df_t["date"],
-                    y=self.df_t["p05"],
+                    x=self.data["date"],
+                    y=self.data["p05"],
                     name="P05",
                     line=dict(color="#000", width=1, dash="dot"),
                     showlegend=False,
@@ -204,8 +204,8 @@ class MeteoHistInteractive(MeteoHist):
 
         fig.add_trace(
             go.Scatter(
-                x=self.df_t["date"],
-                y=self.df_t["mean"],
+                x=self.data["date"],
+                y=self.data["mean"],
                 name="Mean",
                 line=dict(color="#000", width=2.5),
                 showlegend=False,
@@ -227,9 +227,9 @@ class MeteoHistInteractive(MeteoHist):
 
         # Define opacity depending on whether peak alpha is enabled
         opacity = (
-            self.df_t[f"{self.year}_alpha"]
+            self.data[f"{self.year}_alpha"]
             if self.settings["peak_alpha"]
-            else np.ones(len(self.df_t))
+            else np.ones(len(self.data))
         )
 
         # Get colorscale
@@ -239,9 +239,9 @@ class MeteoHistInteractive(MeteoHist):
         if chart_type == "bar":
             fig.add_trace(
                 go.Bar(
-                    x=self.df_t["date"],
-                    y=self.df_t[f"{self.year}_diff"],
-                    base=self.df_t["mean"],
+                    x=self.data["date"],
+                    y=self.data[f"{self.year}_diff"],
+                    base=self.data["mean"],
                     name=f"{self.year} value",
                     marker=dict(
                         color=colors,
@@ -258,8 +258,8 @@ class MeteoHistInteractive(MeteoHist):
         # Invisible trace just to show the correct hover info
         fig.add_trace(
             go.Scatter(
-                x=self.df_t["date"],
-                y=self.df_t[f"{self.year}"],
+                x=self.data["date"],
+                y=self.data[f"{self.year}"],
                 showlegend=False,
                 mode="markers",
                 name="Hoverinfo current date",
@@ -272,14 +272,14 @@ class MeteoHistInteractive(MeteoHist):
         )
 
         # For each day, add a filled area between the mean and the year's value
-        for i in range(len(self.df_t) - 1):
+        for i in range(len(self.data) - 1):
             # Define x and y values to draw a polygon between mean and values of today and tomorrow
-            date_today = self.df_t["date"].iloc[i]
-            date_tomorrow = self.df_t["date"].iloc[i + 1]
-            mean_today = self.df_t["mean"].iloc[i]
-            mean_tomorrow = self.df_t["mean"].iloc[i + 1]
-            value_today = self.df_t[f"{self.year}"].iloc[i]
-            value_tomorrow = self.df_t[f"{self.year}"].iloc[i + 1]
+            date_today = self.data["date"].iloc[i]
+            date_tomorrow = self.data["date"].iloc[i + 1]
+            mean_today = self.data["mean"].iloc[i]
+            mean_tomorrow = self.data["mean"].iloc[i + 1]
+            value_today = self.data[f"{self.year}"].iloc[i]
+            value_tomorrow = self.data[f"{self.year}"].iloc[i + 1]
 
             # If one day is above and the other below the mean, set the value to the mean
             if (value_today > mean_today) ^ (value_tomorrow > mean_tomorrow):
@@ -287,7 +287,7 @@ class MeteoHistInteractive(MeteoHist):
 
             fig.add_trace(
                 go.Scatter(
-                    name=f"Daily value {self.df_t['date'].iloc[i].strftime('%d.%m.%Y')}",
+                    name=f"Daily value {self.data['date'].iloc[i].strftime('%d.%m.%Y')}",
                     x=[date_today, date_today, date_tomorrow, date_tomorrow],
                     y=[mean_today, value_today, value_tomorrow, mean_tomorrow],
                     line_width=0,
@@ -332,7 +332,7 @@ class MeteoHistInteractive(MeteoHist):
         conf = conf_options[how]
 
         # Create a copy of the dataframe to sort
-        df_sorted = self.df_t.copy()
+        df_sorted = self.data.copy()
 
         if self.settings["peak_method"] != "percentile":
             # By default, sort by difference between year's value and mean
@@ -342,7 +342,7 @@ class MeteoHistInteractive(MeteoHist):
             sort_column = f"{self.year}_diff_minmax"
             df_sorted[sort_column] = df_sorted[f"{self.year}"] - df_sorted[conf["ref"]]
 
-        df_sorted = self.df_t.sort_values(sort_column, ascending=conf["asc"])
+        df_sorted = self.data.sort_values(sort_column, ascending=conf["asc"])
 
         # Remove values that are too close together (min_distance)
         for i in range(self.settings[conf["setting"]]):
@@ -400,7 +400,7 @@ class MeteoHistInteractive(MeteoHist):
         if self.settings["metric"]["name"] == "precipitation_cum":
             # Position arrow on the mean line in mid April
             arrow_x = dt.datetime.strptime(f"{self.year}-04-15", "%Y-%m-%d")
-            arrow_y = self.df_t[self.df_t["date"] == arrow_x]["mean"].values[0]
+            arrow_y = self.data[self.data["date"] == arrow_x]["mean"].values[0]
 
             # Position text center mid March at 1/6 of the distance
             # between maximum value for February to April and y axis maximum
@@ -411,7 +411,7 @@ class MeteoHistInteractive(MeteoHist):
         elif self.settings["metric"]["name"] == "precipitation_rolling":
             # Position arrow on the mean line in mid March
             arrow_x = dt.datetime.strptime(f"{self.year}-03-15", "%Y-%m-%d")
-            arrow_y = self.df_t[self.df_t["date"] == arrow_x]["mean"].values[0]
+            arrow_y = self.data[self.data["date"] == arrow_x]["mean"].values[0]
 
             # Position text center in February at 1/6 of the distance
             # between maximum value for January to February and y axis maximum
@@ -422,7 +422,7 @@ class MeteoHistInteractive(MeteoHist):
         else:
             # Position arrow on the mean line in March
             arrow_x = dt.datetime.strptime(f"{self.year}-03-15", "%Y-%m-%d")
-            arrow_y = self.df_t[self.df_t["date"] == arrow_x]["mean"].values[0]
+            arrow_y = self.data[self.data["date"] == arrow_x]["mean"].values[0]
 
             # Position text center in mid April at 1/3 of the distance
             # between minimum value for March to May and y axis minimum
@@ -456,8 +456,8 @@ class MeteoHistInteractive(MeteoHist):
         if self.settings["metric"]["name"] == "precipitation_cum":
             # Position arrow 1/6 into the p05/p95 area in mid September
             arrow_x = dt.datetime.strptime(f"{self.year}-09-15", "%Y-%m-%d")
-            idx = self.df_t[self.df_t["date"] == arrow_x].index[0]
-            mean, p05 = self.df_t.iloc[idx]["mean"], self.df_t.iloc[idx]["p05"]
+            idx = self.data[self.data["date"] == arrow_x].index[0]
+            mean, p05 = self.data.iloc[idx]["mean"], self.data.iloc[idx]["p05"]
             arrow_y = p05 + (mean - p05) / 6
 
             # Position text center mid October at 1/3 of the distance
@@ -469,8 +469,8 @@ class MeteoHistInteractive(MeteoHist):
         elif self.settings["metric"]["name"] == "precipitation_rolling":
             # Position arrow 1/6 into the p05/p95 area in mid September
             arrow_x = dt.datetime.strptime(f"{self.year}-09-15", "%Y-%m-%d")
-            idx = self.df_t[self.df_t["date"] == arrow_x].index[0]
-            mean, p95 = self.df_t.iloc[idx]["mean"], self.df_t.iloc[idx]["p95"]
+            idx = self.data[self.data["date"] == arrow_x].index[0]
+            mean, p95 = self.data.iloc[idx]["mean"], self.data.iloc[idx]["p95"]
             arrow_y = p95 - (p95 - mean) / 6
 
             # Position text center mid October at 1/3 of the distance
@@ -482,8 +482,8 @@ class MeteoHistInteractive(MeteoHist):
         else:
             # Position arrow 1/6 into the p05/p95 area in mid October
             arrow_x = dt.datetime.strptime(f"{self.year}-10-15", "%Y-%m-%d")
-            idx = self.df_t[self.df_t["date"] == arrow_x].index[0]
-            mean, p05 = self.df_t.iloc[idx]["mean"], self.df_t.iloc[idx]["p05"]
+            idx = self.data[self.data["date"] == arrow_x].index[0]
+            mean, p05 = self.data.iloc[idx]["mean"], self.data.iloc[idx]["p05"]
             arrow_y = p05 + (mean - p05) / 6
 
             # Position text center mid September at 1/3 of the distance
@@ -513,8 +513,8 @@ class MeteoHistInteractive(MeteoHist):
         # Annotations for percentile lines
         for percentile in ["p05", "p95"]:
             fig.add_annotation(
-                x=self.df_t["date"].iloc[-1],
-                y=self.df_t[percentile].iloc[-1],
+                x=self.data["date"].iloc[-1],
+                y=self.data[percentile].iloc[-1],
                 text=percentile.upper(),
                 showarrow=False,
                 xanchor="left",

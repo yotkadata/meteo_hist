@@ -165,17 +165,17 @@ class MeteoHistStatic(MeteoHist):
 
         # Plot area between p05 and p95
         axes.fill_between(
-            self.df_t.index,
-            self.df_t[f"p{percentiles[0]}"],
-            self.df_t[f"p{percentiles[1]}"],
+            self.data.index,
+            self.data[f"p{percentiles[0]}"],
+            self.data[f"p{percentiles[1]}"],
             color=self.settings["fill_percentiles"],
         )
 
         for percentile in percentiles:
             # Add dashed line for percentile
             axes.plot(
-                self.df_t.index,
-                self.df_t[f"p{percentile}"],
+                self.data.index,
+                self.data[f"p{percentile}"],
                 label=f"{percentile}th Percentile",
                 color="black",
                 linestyle="dashed",
@@ -184,8 +184,8 @@ class MeteoHistStatic(MeteoHist):
             )
             # Place a label on the line
             axes.text(
-                self.df_t.index[-1],
-                self.df_t[f"p{percentile}"].iloc[-1],
+                self.data.index[-1],
+                self.data[f"p{percentile}"].iloc[-1],
                 f"P{percentile}",
                 horizontalalignment="left",
                 verticalalignment="center",
@@ -202,13 +202,13 @@ class MeteoHistStatic(MeteoHist):
             # Position arrow in mid March
             arrow_xy = (
                 int(365 / 3.5 - 30),
-                self.df_t["mean"].iloc[int(365 / 3.5 - 30)],
+                self.data["mean"].iloc[int(365 / 3.5 - 30)],
             )
 
             # Position text in mid Febuary / between max and total max
             text_xy = (
                 int(365 / 12 * 1.5),
-                (self.df_t["p95"].iloc[int(365 / 24)] + y_max) / 2,
+                (self.data["p95"].iloc[int(365 / 24)] + y_max) / 2,
             )
             text_ha = "center"
             text_va = "center"
@@ -216,7 +216,7 @@ class MeteoHistStatic(MeteoHist):
             # Position arrow in ~March
             arrow_xy = (
                 int(365 / 3.5 - 30),
-                self.df_t["mean"].iloc[int(365 / 3.5 - 30)],
+                self.data["mean"].iloc[int(365 / 3.5 - 30)],
             )
 
             # Position text in January between top and maximum value
@@ -233,13 +233,13 @@ class MeteoHistStatic(MeteoHist):
             # Position arrow to the left of the annotation
             arrow_xy = (
                 int(365 / 3.5 - 30),
-                self.df_t["mean"].iloc[int(365 / 3.5 - 30)],
+                self.data["mean"].iloc[int(365 / 3.5 - 30)],
             )
 
             # Position text in ~April / between p05 line and minimum
             text_xy = (
                 int(365 / 3.5),
-                (self.df_t["p05"].iloc[int(365 / 3.5)] + y_min) / 2,
+                (self.data["p05"].iloc[int(365 / 3.5)] + y_min) / 2,
             )
             text_ha = "center"
             text_va = "center"
@@ -270,9 +270,9 @@ class MeteoHistStatic(MeteoHist):
             arrow_xy = (
                 x_pos,
                 (
-                    self.df_t["p05"].iloc[x_pos]
+                    self.data["p05"].iloc[x_pos]
                     + (
-                        (self.df_t["mean"].iloc[x_pos] - self.df_t["p05"].iloc[x_pos])
+                        (self.data["mean"].iloc[x_pos] - self.data["p05"].iloc[x_pos])
                         / 6
                     )
                 ),
@@ -281,7 +281,7 @@ class MeteoHistStatic(MeteoHist):
             # Position text between p05 and zero
             text_xy = (
                 int(365 / 12 * 10.5),
-                (self.df_t["p05"].iloc[int(365 / 12 * 8)] + y_min) / 2,
+                (self.data["p05"].iloc[int(365 / 12 * 8)] + y_min) / 2,
             )
             text_ha = "center"
             text_va = "center"
@@ -292,9 +292,9 @@ class MeteoHistStatic(MeteoHist):
             arrow_xy = (
                 x_pos,
                 (
-                    self.df_t["p95"].iloc[x_pos]
+                    self.data["p95"].iloc[x_pos]
                     - (
-                        (self.df_t["p95"].iloc[x_pos] - self.df_t["mean"].iloc[x_pos])
+                        (self.data["p95"].iloc[x_pos] - self.data["mean"].iloc[x_pos])
                         / 6
                     )
                 ),
@@ -314,8 +314,8 @@ class MeteoHistStatic(MeteoHist):
             arrow_xy = (
                 int(365 / 12 * 10),
                 (
-                    self.df_t["p05"].iloc[int(365 / 12 * 10)]
-                    + self.df_t["mean"].iloc[int(365 / 12 * 10)]
+                    self.data["p05"].iloc[int(365 / 12 * 10)]
+                    + self.data["mean"].iloc[int(365 / 12 * 10)]
                 )
                 / 2,
             )
@@ -387,7 +387,7 @@ class MeteoHistStatic(MeteoHist):
             method = "above"
 
         # Normalize difference to 0-1
-        diff = self.df_t[f"{self.year}_diff"]
+        diff = self.data[f"{self.year}_diff"]
         norm = plt.Normalize(diff.min(), diff.max())
 
         # Choose a colormap
@@ -396,19 +396,19 @@ class MeteoHistStatic(MeteoHist):
         # Get colors from the colormap
         colors = colormap(norm(diff))
 
-        for i in range(len(self.df_t.index) - 1):
+        for i in range(len(self.data.index) - 1):
             # Set alpha values
             alpha = (
-                self.df_t[f"{self.year}_alpha"].iloc[i]
+                self.data[f"{self.year}_alpha"].iloc[i]
                 if self.settings["peak_alpha"]
                 else 1
             )
 
             # Plot area between mean and year's value
             axes.fill_between(
-                self.df_t.index[i : i + 2],
-                self.df_t[f"{self.year}_{method}"].iloc[i : i + 2],
-                self.df_t["mean"].iloc[i : i + 2],
+                self.data.index[i : i + 2],
+                self.data[f"{self.year}_{method}"].iloc[i : i + 2],
+                self.data["mean"].iloc[i : i + 2],
                 color=colors[i],
                 alpha=alpha,
                 edgecolor="none",
@@ -421,14 +421,14 @@ class MeteoHistStatic(MeteoHist):
         """
         # By default, sort by difference between year's value and mean
         df_max = (
-            self.df_t.sort_values(f"{self.year}_diff", ascending=False)
+            self.data.sort_values(f"{self.year}_diff", ascending=False)
             .loc[: self.settings["highlight_max"]]
             .copy()
         )
 
         # If peak method is percentile, sort by difference between year's value and p95
         if self.settings["peak_method"] == "percentile":
-            df_max = self.df_t.copy()
+            df_max = self.data.copy()
             df_max[f"{self.year}_diffp95"] = df_max[f"{self.year}"] - df_max["p95"]
 
             df_max = (
@@ -475,8 +475,8 @@ class MeteoHistStatic(MeteoHist):
 
         # Plot the historical value for each day of the year
         axes.plot(
-            self.df_t.index,
-            self.df_t["mean"],
+            self.data.index,
+            self.data["mean"],
             label=(
                 f"{self.settings['metric']['description']} "
                 f"{self.reference_period[0]}-{self.reference_period[1]}"
