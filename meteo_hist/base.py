@@ -16,52 +16,6 @@ from statsmodels.nonparametric.smoothers_lowess import lowess
 from unidecode import unidecode
 
 
-def get_lat_lon(query: str, lang: str = "en") -> dict:
-    """
-    Get latitude and longitude from a query string.
-    """
-    url = (
-        "https://nominatim.openstreetmap.org/search?"
-        f"q={query}&format=json&addressdetails=1&"
-        f"accept-language={lang}"
-    )
-
-    # Get the data from the API
-    location = requests.get(url, timeout=30)
-    location = location.json()
-
-    keys = [
-        "city",
-        "town",
-        "village",
-        "hamlet",
-        "suburb",
-        "municipality",
-        "district",
-        "county",
-        "state",
-    ]
-
-    types = ["city", "administrative", "town", "village"]
-
-    result = []
-
-    for key in keys:
-        for loc in location:
-            if loc["type"] in types and key in loc["address"]:
-                result.append(
-                    {
-                        "display_name": loc["display_name"],
-                        "location_name": f"{loc['address'][key]}, {loc['address']['country']}",
-                        "lat": loc["lat"],
-                        "lon": loc["lon"],
-                    }
-                )
-                break
-
-    return result
-
-
 class MeteoHist:
     """
     Base class to prepare data and provide methods to create a plot of a
@@ -684,3 +638,49 @@ class MeteoHist:
             return location_name
 
         return None
+
+    @staticmethod
+    def get_lat_lon(query: str, lang: str = "en") -> dict:
+        """
+        Get latitude and longitude from a query string.
+        """
+        url = (
+            "https://nominatim.openstreetmap.org/search?"
+            f"q={query}&format=json&addressdetails=1&"
+            f"accept-language={lang}"
+        )
+
+        # Get the data from the API
+        location = requests.get(url, timeout=30)
+        location = location.json()
+
+        keys = [
+            "city",
+            "town",
+            "village",
+            "hamlet",
+            "suburb",
+            "municipality",
+            "district",
+            "county",
+            "state",
+        ]
+
+        types = ["city", "administrative", "town", "village"]
+
+        result = []
+
+        for key in keys:
+            for loc in location:
+                if loc["type"] in types and key in loc["address"]:
+                    result.append(
+                        {
+                            "display_name": loc["display_name"],
+                            "location_name": f"{loc['address'][key]}, {loc['address']['country']}",
+                            "lat": float(loc["lat"]),
+                            "lon": float(loc["lon"]),
+                        }
+                    )
+                    break
+
+        return result

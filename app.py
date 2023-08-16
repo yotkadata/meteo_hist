@@ -14,7 +14,7 @@ from pydantic.v1.utils import deep_update
 from streamlit_folium import folium_static
 from streamlit_js_eval import streamlit_js_eval
 
-from meteo_hist.base import MeteoHist, get_lat_lon
+from meteo_hist.base import MeteoHist
 from meteo_hist.interactive import MeteoHistInteractive
 
 
@@ -224,14 +224,14 @@ def build_location_by_name(location: str) -> tuple[float, float, str]:
     """
     with st.spinner("Searching for latitude and longitude..."):
         # Get the latitude and longitude
-        location = get_lat_lon(location)
+        location = MeteoHist.get_lat_lon(location)
 
         if len(location) == 0:
             message_box.error("Location not found. Please try again.")
             return None, None, None
 
-        lat = float(location[0]["lat"])
-        lon = float(location[0]["lon"])
+        lat = location[0]["lat"]
+        lon = location[0]["lon"]
         location_name = location[0]["location_name"]
 
         return lat, lon, location_name
