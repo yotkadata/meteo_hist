@@ -73,6 +73,7 @@ class MeteoHist:
             "highlight_min": 1,
             "peak_alpha": True,
             "peak_method": "mean",
+            "peak_distance": 10,
             "smooth": {
                 "apply": True,
                 "frac": 1 / 12,

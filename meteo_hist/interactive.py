@@ -346,7 +346,7 @@ class MeteoHistInteractive(MeteoHist):
         # Remove values that are too close together (min_distance)
         for i in range(self.settings[conf["setting"]]):
             current = df_sorted["dayofyear"].iloc[i]
-            min_distance = 5  # Values closer than this will be removed
+            min_distance = self.settings["peak_distance"]
             range_around_current = [
                 day
                 for day in range(current - min_distance, current + min_distance + 1)
