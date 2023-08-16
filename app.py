@@ -16,7 +16,6 @@ from streamlit_js_eval import streamlit_js_eval
 
 from meteo_hist.base import MeteoHist, get_lat_lon, get_location
 from meteo_hist.interactive import MeteoHistInteractive
-from meteo_hist.static import MeteoHistStatic
 
 
 def get_form_defaults() -> dict:
@@ -413,18 +412,6 @@ def build_form(method: str = "by_name", params: dict = None) -> dict:
         )
 
         with st.expander("Advanced settings"):
-            # Selection for interactive vs static plot
-            form_values["plot_type"] = st.radio(
-                "Plot type:",
-                ["Interactive", "Static"],
-                index=0 if defaults["plot_type"] == "interactive" else 1,
-                help="""
-                Interactive plots allow you to zoom in and out and to pan the plot.
-                Static plots are just images that can be downloaded as PNG.
-                They do not allow zooming or panning.
-                """,
-            )
-
             # Selection for unit system
             system = ["metric", "imperial"]
             system_names = ["Metric (°C, mm)", "Imperial (°F, In)"]
@@ -597,53 +584,41 @@ def create_graph(inputs: dict) -> MeteoHist:
             # Don't save plot to file here, first show it
             inputs["save_file"] = False
 
-            if inputs["plot_type"] == "Static":
-                plot = MeteoHistStatic(
-                    coords=(inputs["lat"], inputs["lon"]),
-                    year=inputs["year"],
-                    reference_period=inputs["ref_period"],
-                    metric=inputs["metric"]["name"],
-                    settings=inputs,
+            # Calculate width and height based on viewport width
+            width = (
+                st.session_state["viewport_width"]
+                if st.session_state["viewport_width"] is not None
+                else 1200
+            )
+            height = width * 3 / 5
+
+            # Instantiate the plot object
+            plot = MeteoHistInteractive(
+                coords=(inputs["lat"], inputs["lon"]),
+                year=inputs["year"],
+                reference_period=inputs["ref_period"],
+                metric=inputs["metric"]["name"],
+                settings=inputs,
+            )
+
+            # Create figure
+            figure, file_path = plot.create_plot()
+
+            # Create a copy of the figure to display in Streamlit
+            figure_display = deepcopy(figure)
+
+            # Set layout options just for the plot in Streamlit
+            layout_options = {"width": width, "height": height, "font_size": 18}
+            figure_display.update_layout(layout_options)
+
+            # Adjust position and font size of annotations
+            for annotation_name in ["Data source", "Data info"]:
+                figure_display.update_annotations(
+                    selector={"name": annotation_name}, y=-0.11, font_size=14
                 )
-                figure, file_path, _ = plot.create_plot()
-                st.pyplot(figure)
 
-            else:
-                # Calculate width and height based on viewport width
-                width = (
-                    st.session_state["viewport_width"]
-                    if st.session_state["viewport_width"] is not None
-                    else 1200
-                )
-                height = width * 3 / 5
-
-                # Instantiate the plot object
-                plot = MeteoHistInteractive(
-                    coords=(inputs["lat"], inputs["lon"]),
-                    year=inputs["year"],
-                    reference_period=inputs["ref_period"],
-                    metric=inputs["metric"]["name"],
-                    settings=inputs,
-                )
-
-                # Create figure
-                figure, file_path = plot.create_plot()
-
-                # Create a copy of the figure to display in Streamlit
-                figure_display = deepcopy(figure)
-
-                # Set layout options just for the plot in Streamlit
-                layout_options = {"width": width, "height": height, "font_size": 18}
-                figure_display.update_layout(layout_options)
-
-                # Adjust position and font size of annotations
-                for annotation_name in ["Data source", "Data info"]:
-                    figure_display.update_annotations(
-                        selector={"name": annotation_name}, y=-0.11, font_size=14
-                    )
-
-                # Display the plot
-                st.plotly_chart(figure_display, theme=None, width=width, height=height)
+            # Display the plot
+            st.plotly_chart(figure_display, theme=None, width=width, height=height)
 
     # Save the plot as a file
     plot.save_plot_to_file()
