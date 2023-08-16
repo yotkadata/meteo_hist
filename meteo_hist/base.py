@@ -116,7 +116,7 @@ class MeteoHist:
         if isinstance(old_settings, dict):
             # Changes that require downloading/transforming the data again
             download_keys = ["system"]
-            transform_keys = ["metric", "system", "smooth"]
+            transform_keys = ["system", "smooth"]
 
             # Check if any values for keys in download_keys are different
             if any(settings[key] != old_settings[key] for key in download_keys):

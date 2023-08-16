@@ -591,14 +591,34 @@ def create_graph(inputs: dict) -> MeteoHist:
             )
             height = width * 3 / 5
 
-            # Instantiate the plot object
-            plot = MeteoHistInteractive(
-                coords=(inputs["lat"], inputs["lon"]),
-                year=inputs["year"],
-                reference_period=inputs["ref_period"],
-                metric=inputs["metric"]["name"],
-                settings=inputs,
-            )
+            # Determine if we need to create a new plot object or update an existing one
+            if "last_settings" in st.session_state:
+                reload_keys = ["lat", "lon", "year", "ref_period", "metric", "system"]
+                reload = any(
+                    inputs[key] != st.session_state["last_settings"][key]
+                    for key in reload_keys
+                )
+            else:
+                reload = True
+
+            if "plot" in st.session_state and not reload:
+                # If plot object is already in session state, use it
+                plot = st.session_state["plot"]
+                plot.update_settings(inputs)
+
+            else:
+                # Instantiate the plot object
+                plot = MeteoHistInteractive(
+                    coords=(inputs["lat"], inputs["lon"]),
+                    year=inputs["year"],
+                    reference_period=inputs["ref_period"],
+                    metric=inputs["metric"]["name"],
+                    settings=inputs,
+                )
+
+            # Save plot object and settings to session state
+            st.session_state["plot"] = plot
+            st.session_state["last_settings"] = inputs
 
             # Create figure
             figure, file_path = plot.create_plot()
