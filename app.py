@@ -14,7 +14,7 @@ from pydantic.v1.utils import deep_update
 from streamlit_folium import folium_static
 from streamlit_js_eval import streamlit_js_eval
 
-from meteo_hist.base import MeteoHist, get_data, get_lat_lon, get_location
+from meteo_hist.base import MeteoHist, get_lat_lon, get_location
 from meteo_hist.interactive import MeteoHistInteractive
 from meteo_hist.static import MeteoHistStatic
 
@@ -561,61 +561,34 @@ def process_form(form_values: dict) -> dict:
     return form_values
 
 
-@st.cache_data(show_spinner=False, ttl="1h")
-def download_data(inputs: dict) -> pd.DataFrame():
+def display_context_info(graph: MeteoHist) -> None:
     """
-    Download data from open-meteo.com.
+    Display context information about the graph.
     """
-    if not isinstance(inputs, dict):
-        return None
-
-    # Make sure lat/lon values are set
-    if [x for x in (inputs["lat"], inputs["lon"]) if x is None]:
-        return None
-
-    url = (
-        f"https://www.openstreetmap.org/"
-        f"?mlat={inputs['lat']}&mlon={inputs['lon']}"
-        f"#map=6/{inputs['lat']}/{inputs['lon']}&layers=H"
-    )
-
-    st.markdown(
-        f"""<div style="text-align: right;">
-            Using location: <strong>{inputs["location_name"]}</strong>
-            (<a href="{url}">lat: {inputs["lat"]}, lon: {inputs["lon"]}</a>)
-            </div>""",
-        unsafe_allow_html=True,
-    )
-
-    with st.spinner("Downloading data..."):
-        # Download the data
-        data = get_data(
-            inputs["lat"],
-            inputs["lon"],
-            year=inputs["year"],
-            reference_period=inputs["ref_period"],
-            metric=inputs["metric"]["data"],
-            units=inputs["system"],
-        )
-
-        # Get last available date and save it
-        last_date = (
-            data.dropna(subset=["value"], how="all")["date"]
-            .iloc[-1]
-            .strftime("%d %b %Y")
+    if graph.coords is not None:
+        url = (
+            f"https://www.openstreetmap.org/"
+            f"?mlat={graph.coords[0]}&mlon={graph.coords[1]}"
+            f"#map=6/{graph.coords[0]}/{graph.coords[1]}&layers=H"
         )
 
         st.markdown(
             f"""<div style="text-align: right;">
-                Last available date: <strong>{last_date}</strong>
+                Using location: <strong>{graph.settings["location_name"]}</strong>
+                (<a href="{url}">lat: {graph.coords[0]}, lon: {graph.coords[1]}</a>)
                 </div>""",
             unsafe_allow_html=True,
         )
 
-        return data
+        st.markdown(
+            f"""<div style="text-align: right;">
+                Last available date: <strong>{graph.last_date}</strong>
+                </div>""",
+            unsafe_allow_html=True,
+        )
 
 
-def create_graph(data: pd.DataFrame, inputs: dict) -> None:
+def create_graph(inputs: dict) -> MeteoHist:
     """
     Create the graph.
     """
@@ -626,9 +599,10 @@ def create_graph(data: pd.DataFrame, inputs: dict) -> None:
 
             if inputs["plot_type"] == "Static":
                 plot = MeteoHistStatic(
-                    data,
-                    inputs["year"],
+                    coords=(inputs["lat"], inputs["lon"]),
+                    year=inputs["year"],
                     reference_period=inputs["ref_period"],
+                    metric=inputs["metric"]["name"],
                     settings=inputs,
                 )
                 figure, file_path, _ = plot.create_plot()
@@ -645,8 +619,8 @@ def create_graph(data: pd.DataFrame, inputs: dict) -> None:
 
                 # Instantiate the plot object
                 plot = MeteoHistInteractive(
-                    data,
-                    inputs["year"],
+                    coords=(inputs["lat"], inputs["lon"]),
+                    year=inputs["year"],
                     reference_period=inputs["ref_period"],
                     metric=inputs["metric"]["name"],
                     settings=inputs,
@@ -676,6 +650,8 @@ def create_graph(data: pd.DataFrame, inputs: dict) -> None:
 
     # Save the file path to session state
     st.session_state["last_generated"] = file_path
+
+    return plot
 
 
 # Set page title
@@ -776,33 +752,32 @@ with col2:
         # Process form values
         input_processed = process_form(input_values)
 
-        # Download data
-        meteo_data = download_data(input_processed)
+        # Create figure for the graph
+        plot_object = create_graph(input_processed)
 
-        if meteo_data is not None:
-            # Create figure for the graph
-            create_graph(meteo_data, input_processed)
+        # Display some info about the data
+        display_context_info(plot_object)
 
-            st.write("")
+        st.write("")
 
-            with st.expander("Share graph"):
-                st.write("To share this graph, you can use the following URL:")
-                st.write(f"{st.session_state['share_url']}", unsafe_allow_html=True)
+        with st.expander("Share graph"):
+            st.write("To share this graph, you can use the following URL:")
+            st.write(f"{st.session_state['share_url']}", unsafe_allow_html=True)
 
-            with st.expander("Show map"):
-                with st.spinner("Creating map..."):
-                    # Show a map
-                    m = folium.Map(
-                        location=[input_processed["lat"], input_processed["lon"]],
-                        zoom_start=4,
-                        height=500,
-                    )
-                    folium.Marker(
-                        [input_processed["lat"], input_processed["lon"]],
-                        popup=input_processed["location_name"],
-                    ).add_to(m)
-                    folium.TileLayer("Stamen Terrain").add_to(m)
-                    folium_static(m)
+        with st.expander("Show map"):
+            with st.spinner("Creating map..."):
+                # Show a map
+                m = folium.Map(
+                    location=[input_processed["lat"], input_processed["lon"]],
+                    zoom_start=4,
+                    height=500,
+                )
+                folium.Marker(
+                    [input_processed["lat"], input_processed["lon"]],
+                    popup=input_processed["location_name"],
+                ).add_to(m)
+                folium.TileLayer("Stamen Terrain").add_to(m)
+                folium_static(m)
 
     if random_graph:
         st.write("Random graph from the list of graphs created before.")

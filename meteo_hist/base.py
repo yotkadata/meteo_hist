@@ -16,88 +16,6 @@ from statsmodels.nonparametric.smoothers_lowess import lowess
 from unidecode import unidecode
 
 
-def calc_dates(ref_period: tuple[int, int], year: int) -> tuple[str, str]:
-    """
-    Calculate the start and end date for the data to be downloaded.
-    """
-    # Use year if it is smaller than the ref_period lower bound
-    start_year = year if int(ref_period[0]) > year else ref_period[0]
-
-    # Use year if it is bigger than the ref_period upper bound
-    end_year = year if int(ref_period[1]) < year else ref_period[1]
-
-    date_start = f"{start_year}-01-01"
-    date_end = f"{end_year}-12-31"
-
-    # If the end date is in the future, set it to today
-    if date_end >= dt.datetime.now().strftime("%Y-%m-%d"):
-        date_end = dt.datetime.now().strftime("%Y-%m-%d")
-
-    return date_start, date_end
-
-
-def get_data(
-    lat: float,
-    lon: float,
-    year: int = None,
-    reference_period: tuple[int, int] = (1961, 1990),
-    metric: str = "temperature_2m_mean",
-    units: str = "metric",
-) -> pd.DataFrame:
-    """
-    Get data from the API and return a DataFrame with the data.
-    """
-    # Set default for year
-    year = dt.datetime.now().year if year is None else year
-
-    start_date, end_date = calc_dates(reference_period, year)
-
-    url = (
-        "https://archive-api.open-meteo.com/v1/archive?"
-        f"latitude={lat}&longitude={lon}&"
-        f"start_date={start_date}&end_date={end_date}&"
-        f"daily={metric}&timezone=auto"
-    )
-
-    # Set unit to be used
-    unit_temperature = "fahrenheit" if units == "imperial" else "celsius"
-    unit_precipitation = "inch" if units == "imperial" else "mm"
-
-    # Add unit to URL
-    if "temperature" in metric:
-        url = url + f"&temperature_unit={unit_temperature}"
-    if "precipitation" in metric:
-        url = url + f"&precipitation_unit={unit_precipitation}"
-
-    # Get the data from the API
-    data = requests.get(url, timeout=30)
-
-    # Create new Dataframe from column "daily"
-    df_t = pd.DataFrame(
-        {
-            "date": data.json()["daily"]["time"],
-            "value": data.json()["daily"][metric],
-        }
-    )
-
-    # Convert date column to datetime
-    df_t["date"] = pd.to_datetime(df_t["date"])
-
-    # For min and max temperature, remove last available data in current
-    # year because it is distorted due to hourly reporting
-    # Example: if last reported value is at 3am, max represents max of 1-3am.
-    if year == dt.datetime.now().year and metric in [
-        "temperature_2m_min",
-        "temperature_2m_max",
-    ]:
-        # Get row index of last available data
-        idx = df_t[df_t["value"].notnull()].index[-1]
-        # Set value to nan
-        df_t.loc[idx, "value"] = np.nan
-
-    return df_t
-
-
 def get_lat_lon(query: str, lang: str = "en") -> dict:
     """
     Get latitude and longitude from a query string.
@@ -210,7 +128,7 @@ class MeteoHist:
 
     def __init__(
         self,
-        df_t: pd.DataFrame,
+        coords: tuple[float, float],
         year: int = None,
         reference_period: tuple[int, int] = (1961, 1990),
         metric: str = "temperature_mean",
@@ -228,10 +146,12 @@ class MeteoHist:
         settings : dict, optional
             Settings dictionary, by default None.
         """
+        self.coords = coords
         self.metric = metric
         self.settings = self.update_settings(settings)
         self.year = year if year is not None else dt.datetime.now().year
-        self.df_t = self.transform_df(df_t, self.year, reference_period)
+        self.data_raw = self.get_data(coords)
+        self.df_t = self.transform_df(self.data_raw, self.year, reference_period)
         self.reference_period = reference_period
         self.ref_nans = 0
 
@@ -679,3 +599,81 @@ class MeteoHist:
             return file.as_posix()
 
         return None
+
+    def get_data(
+        self,
+        coords: tuple[float, float] = None,
+        metric: str = None,
+        system: str = None,
+        years: tuple[int, int] = None,
+    ) -> pd.DataFrame:
+        """
+        Get data from the OpenMeteo API and return it as a DataFrame.
+        """
+        # Set defaults
+        coords = self.coords if coords is None else coords
+        metric = self.settings["metric"]["name"] if metric is None else metric
+        system = self.settings["system"] if system is None else system
+        years = (1940, dt.datetime.now().year) if years is None else years
+
+        # Define start and end date
+        date_start = f"{years[0]}-01-01"
+        date_end = (
+            f"{years[1]}-12-31"
+            # If the end date is in the future, set it to today
+            if years[1] != dt.datetime.now().year
+            else dt.datetime.now().strftime("%Y-%m-%d")
+        )
+
+        # Get metric data name
+        metric_data = self.get_metric_info(metric)["data"]
+
+        url = (
+            "https://archive-api.open-meteo.com/v1/archive?"
+            f"latitude={coords[0]}&longitude={coords[1]}&"
+            f"start_date={date_start}&end_date={date_end}&"
+            f"daily={metric_data}&timezone=auto"
+        )
+
+        # Set unit to be used
+        unit = self.get_units(metric_name=metric, system=system)
+        unit_names = {
+            "°C": "celsius",
+            "°F": "fahrenheit",
+            "mm": "mm",
+            "in": "inch",
+        }
+
+        # Add unit to URL
+        if "temperature" in metric:
+            url = url + f"&temperature_unit={unit_names[unit]}"
+        if "precipitation" in metric:
+            url = url + f"&precipitation_unit={unit_names[unit]}"
+
+        # Get the data from the API
+        data = requests.get(url, timeout=30)
+
+        # Create new Dataframe from column "daily"
+        df_raw = pd.DataFrame(
+            {
+                "date": data.json()["daily"]["time"],
+                "value": data.json()["daily"][metric_data],
+            }
+        )
+
+        # Convert date column to datetime
+        df_raw["date"] = pd.to_datetime(df_raw["date"])
+
+        # For min and max temperature, remove last available data in current
+        # year because it is distorted due to hourly reporting
+        # Example: if last reported value is at 3am, max represents max of 1-3am.
+        if years[1] == dt.datetime.now().year and metric_data in [
+            "temperature_2m_min",
+            "temperature_2m_max",
+        ]:
+            # Get row index of last available data
+            idx = df_raw[df_raw["value"].notnull()].index[-1]
+            # Set value to nan
+            df_raw.loc[idx, "value"] = np.nan
+
+        return df_raw
