@@ -5,7 +5,6 @@ Class to generate an interactive version of the plot using Plotly.
 import datetime as dt
 
 import numpy as np
-import pandas as pd
 import plotly.graph_objects as go
 from plotly.express.colors import sample_colorscale
 

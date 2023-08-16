@@ -7,7 +7,6 @@ import datetime as dt
 import matplotlib as mpl
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
-import pandas as pd
 import seaborn as sns
 from matplotlib import ticker
 
