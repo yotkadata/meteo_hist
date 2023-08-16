@@ -774,10 +774,6 @@ with col2:
         js_expressions="window.innerWidth", key="ViewportWidth"
     )
 
-    message_box.write(
-        streamlit_js_eval(js_expressions="window.innerWidth", key="ViewportWidth1")
-    )
-
     # Show a random graph on start (but not when the user clicks the "Create" button)
     if "last_generated" not in st.session_state and input_values is None:
         if "start_img" not in st.session_state:
