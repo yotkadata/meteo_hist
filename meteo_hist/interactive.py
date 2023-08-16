@@ -596,7 +596,7 @@ class MeteoHistInteractive(MeteoHist):
             template="plotly_white",
             paper_bgcolor="#fff",
             plot_bgcolor="#fff",
-            margin=dict(b=70, l=60, r=20, pad=10),
+            margin=dict(b=70, l=60, r=20, t=100, pad=10),
             hovermode="x",
             bargap=0,
             width=1000,

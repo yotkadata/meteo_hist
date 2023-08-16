@@ -592,6 +592,7 @@ def adjust_layout(fig: go.Figure, width: int, height: int) -> go.Figure:
     margin_b = int(fig["layout"]["margin"]["b"] * factor)
     margin_l = int(fig["layout"]["margin"]["l"] * factor)
     margin_r = int(fig["layout"]["margin"]["r"] * factor)
+    margin_t = int(fig["layout"]["margin"]["t"] * factor)
     margin_pad = int(fig["layout"]["margin"]["pad"] * factor)
 
     # Set layout options just for the plot in Streamlit
@@ -604,6 +605,7 @@ def adjust_layout(fig: go.Figure, width: int, height: int) -> go.Figure:
             "b": margin_b,
             "l": margin_l,
             "r": margin_r,
+            "t": margin_t,
             "pad": margin_pad,
         },
     }
