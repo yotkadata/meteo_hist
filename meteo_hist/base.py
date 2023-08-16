@@ -426,7 +426,7 @@ class MeteoHist:
                 "yaxis_label": "Temperature",
                 "colors": {
                     "cmap_above": "YlOrRd",
-                    "cmap_below": "YlGnBu_r",
+                    "cmap_below": "YlGnBu",
                 },
             },
             "temperature_min": {
@@ -438,7 +438,7 @@ class MeteoHist:
                 "yaxis_label": "Temperature",
                 "colors": {
                     "cmap_above": "YlOrRd",
-                    "cmap_below": "YlGnBu_r",
+                    "cmap_below": "YlGnBu",
                 },
             },
             "temperature_max": {
@@ -450,7 +450,7 @@ class MeteoHist:
                 "yaxis_label": "Temperature",
                 "colors": {
                     "cmap_above": "YlOrRd",
-                    "cmap_below": "YlGnBu_r",
+                    "cmap_below": "YlGnBu",
                 },
             },
             "precipitation_rolling": {
@@ -462,7 +462,7 @@ class MeteoHist:
                 "yaxis_label": "Precipitation",
                 "colors": {
                     "cmap_above": "YlGnBu",
-                    "cmap_below": "YlOrRd_r",
+                    "cmap_below": "YlOrRd",
                 },
             },
             "precipitation_cum": {
@@ -474,7 +474,7 @@ class MeteoHist:
                 "yaxis_label": "Precipitation",
                 "colors": {
                     "cmap_above": "YlGnBu",
-                    "cmap_below": "YlOrRd_r",
+                    "cmap_below": "YlOrRd",
                 },
             },
         }

@@ -34,40 +34,52 @@ class MeteoHistInteractive(MeteoHist):
     def get_colorscale(self) -> np.ndarray:
         """
         Get the colorscale for the plot as a combination of two colormaps.
+        Values above/below the mean are separately normalized to 0-1 and then
+        mapped to a colormap.
         """
-        # Normalize difference to 0-1
-        diff = self.data[f"{self.year}_diff"]
+        # Get difference between year's value and mean of reference period
+        diff = self.data[f"{self.year}_diff"].copy().to_numpy()
 
         # Create masks for above and below mean
         mask_above = diff > 0
         mask_below = diff < 0
 
-        # Normalize difference to 0-1
-        diff_norm = (diff - np.min(diff)) / (np.max(diff) - np.min(diff))
+        # Get absolute value of difference
+        diff = abs(diff)
 
-        # Replace NaNs with 0
-        diff_norm = np.nan_to_num(diff_norm)
+        # Create array of zeros with same shape as diff
+        diff_norm = np.zeros_like(diff)
 
-        # Create a list of colors for above the mean, else color for 0
-        colors_above = sample_colorscale(
-            self.settings["metric"]["colors"]["cmap_above"],
-            np.where(mask_above, diff_norm, 0),
+        if len(diff[mask_above]) > 0:
+            # Calculate min and max
+            max_above = np.nanmax(diff[mask_above])
+            min_above = np.nanmin(diff[mask_above])
+
+            # Normalize to 0-1
+            diff_norm[mask_above] = (diff[mask_above] - min_above) / (
+                max_above - min_above
+            )
+
+        if len(diff[mask_below]) > 0:
+            # Calculate min and max
+            max_below = np.nanmax(diff[mask_below])
+            min_below = np.nanmin(diff[mask_below])
+
+            # Normalize to 0-1
+            diff_norm[mask_below] = (diff[mask_below] - min_below) / (
+                max_below - min_below
+            )
+
+        # Create array of white colors with same shape as diff
+        colors = np.full_like(diff, "rgb(255, 255, 255)", dtype="object")
+
+        # Sample colors from colormaps, using normalized values
+        colors[mask_above] = sample_colorscale(
+            self.settings["metric"]["colors"]["cmap_above"], diff_norm[mask_above]
         )
-        colors_below = sample_colorscale(
-            self.settings["metric"]["colors"]["cmap_below"],
-            np.where(mask_below, diff_norm, 0),
+        colors[mask_below] = sample_colorscale(
+            self.settings["metric"]["colors"]["cmap_below"], diff_norm[mask_below]
         )
-
-        # Convert to arrays
-        colors_above = np.array(colors_above, dtype="object")
-        colors_below = np.array(colors_below, dtype="object")
-
-        # Create an array of white RGB values (default for zero)
-        colors = np.full_like(colors_below, "rgb(255, 255, 255)", dtype="object")
-
-        # Create a combined array that holds the colors for above and below
-        colors[mask_below] = colors_below[mask_below]
-        colors[mask_above] = colors_above[mask_above]
 
         return colors
 
