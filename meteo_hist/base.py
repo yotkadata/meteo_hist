@@ -62,64 +62,6 @@ def get_lat_lon(query: str, lang: str = "en") -> dict:
     return result
 
 
-def get_location(coords: tuple[float, float], lang: str = "en") -> str:
-    """
-    Get location name from latitude and longitude.
-    """
-    lat, lon = coords
-
-    url = (
-        "https://nominatim.openstreetmap.org/reverse?"
-        f"lat={lat}&lon={lon}&format=json&accept-language={lang}&zoom=18"
-    )
-
-    try:
-        # Get the data from the API
-        location = requests.get(url, timeout=30)
-
-    # Raise an error if the status code is not 200
-    except requests.exceptions.RequestException as excpt:
-        raise SystemExit(excpt) from excpt
-
-    # Convert the response to JSON
-    location = location.json()
-
-    # Check if an error was returned
-    if "error" in location:
-        return None
-
-    # Get the location name
-    if "address" in location:
-        # Set default in case no location name is found
-        location_name = location["display_name"]
-
-        # Keys to look for in the address dictionary
-        keys = [
-            "city",
-            "town",
-            "village",
-            "hamlet",
-            "suburb",
-            "municipality",
-            "district",
-            "county",
-            "state",
-        ]
-        for key in keys:
-            # If the key is in the address dictionary, use it and stop
-            if key in location["address"]:
-                location_name = f"{location['address'][key]}"
-                break
-
-        # Add the country name if it is in the address dictionary
-        if "country" in location["address"]:
-            location_name += f", {location['address']['country']}"
-
-        return location_name
-
-    return None
-
-
 class MeteoHist:
     """
     Base class to prepare data and provide methods to create a plot of a
@@ -197,10 +139,17 @@ class MeteoHist:
         }
 
         # Update default settings if a settings dict was provided
-        if isinstance(settings, dict):
-            return deep_update(default_settings, settings)
+        settings = (
+            deep_update(default_settings, settings)
+            if isinstance(settings, dict)
+            else default_settings
+        )
 
-        return default_settings
+        # Get location name if none was provided
+        if settings["location_name"] is None:
+            settings["location_name"] = self.get_location(self.coords)
+
+        return settings
 
     def dayofyear_to_date(
         self, year: int, dayofyear: int, adj_leap: bool = False
@@ -675,5 +624,63 @@ class MeteoHist:
             file = np.random.choice(file_paths)
 
             return file.as_posix()
+
+        return None
+
+    @staticmethod
+    def get_location(coords: tuple[float, float], lang: str = "en") -> str:
+        """
+        Get location name from latitude and longitude.
+        """
+        lat, lon = coords
+
+        url = (
+            "https://nominatim.openstreetmap.org/reverse?"
+            f"lat={lat}&lon={lon}&format=json&accept-language={lang}&zoom=18"
+        )
+
+        try:
+            # Get the data from the API
+            location = requests.get(url, timeout=30)
+
+        # Raise an error if the status code is not 200
+        except requests.exceptions.RequestException as excpt:
+            raise SystemExit(excpt) from excpt
+
+        # Convert the response to JSON
+        location = location.json()
+
+        # Check if an error was returned
+        if "error" in location:
+            return None
+
+        # Get the location name
+        if "address" in location:
+            # Set default in case no location name is found
+            location_name = location["display_name"]
+
+            # Keys to look for in the address dictionary
+            keys = [
+                "city",
+                "town",
+                "village",
+                "hamlet",
+                "suburb",
+                "municipality",
+                "district",
+                "county",
+                "state",
+            ]
+            for key in keys:
+                # If the key is in the address dictionary, use it and stop
+                if key in location["address"]:
+                    location_name = f"{location['address'][key]}"
+                    break
+
+            # Add the country name if it is in the address dictionary
+            if "country" in location["address"]:
+                location_name += f", {location['address']['country']}"
+
+            return location_name
 
         return None

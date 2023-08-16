@@ -14,7 +14,7 @@ from pydantic.v1.utils import deep_update
 from streamlit_folium import folium_static
 from streamlit_js_eval import streamlit_js_eval
 
-from meteo_hist.base import MeteoHist, get_lat_lon, get_location
+from meteo_hist.base import MeteoHist, get_lat_lon
 from meteo_hist.interactive import MeteoHistInteractive
 
 
@@ -243,7 +243,7 @@ def build_location_by_coords(lat: float, lon: float, display_name: str) -> str:
     """
     with st.spinner("Searching for location name..."):
         # Get the location name
-        location = get_location((lat, lon))
+        location = MeteoHist.get_location((lat, lon))
 
         if location is None and display_name is None:
             location = None
@@ -727,32 +727,36 @@ with col2:
         # Process form values
         input_processed = process_form(input_values)
 
-        # Create figure for the graph
-        plot_object = create_graph(input_processed)
+        # Make sure lat/lon values are set
+        if isinstance(input_processed, dict) and not [
+            x for x in (input_processed["lat"], input_processed["lon"]) if x is None
+        ]:
+            # Create figure for the graph
+            plot_object = create_graph(input_processed)
 
-        # Display some info about the data
-        display_context_info(plot_object)
+            # Display some info about the data
+            display_context_info(plot_object)
 
-        st.write("")
+            st.write("")
 
-        with st.expander("Share graph"):
-            st.write("To share this graph, you can use the following URL:")
-            st.write(f"{st.session_state['share_url']}", unsafe_allow_html=True)
+            with st.expander("Share graph"):
+                st.write("To share this graph, you can use the following URL:")
+                st.write(f"{st.session_state['share_url']}", unsafe_allow_html=True)
 
-        with st.expander("Show map"):
-            with st.spinner("Creating map..."):
-                # Show a map
-                m = folium.Map(
-                    location=[input_processed["lat"], input_processed["lon"]],
-                    zoom_start=4,
-                    height=500,
-                )
-                folium.Marker(
-                    [input_processed["lat"], input_processed["lon"]],
-                    popup=input_processed["location_name"],
-                ).add_to(m)
-                folium.TileLayer("Stamen Terrain").add_to(m)
-                folium_static(m)
+            with st.expander("Show map"):
+                with st.spinner("Creating map..."):
+                    # Show a map
+                    m = folium.Map(
+                        location=[input_processed["lat"], input_processed["lon"]],
+                        zoom_start=4,
+                        height=500,
+                    )
+                    folium.Marker(
+                        [input_processed["lat"], input_processed["lon"]],
+                        popup=input_processed["location_name"],
+                    ).add_to(m)
+                    folium.TileLayer("Stamen Terrain").add_to(m)
+                    folium_static(m)
 
     if random_graph:
         st.write("Random graph from the list of graphs created before.")
