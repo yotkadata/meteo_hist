@@ -359,8 +359,8 @@ class MeteoHistStatic(MeteoHist):
         """
         Add coordinates and last avalable date to the plot.
         """
-        if self.settings["lat"] is None or self.settings["lon"] is None:
-            return
+        if self.coords[0] is None or self.coords[1] is None:
+            return fig
 
         last_date_text = (
             f" (last date included: {self.last_date})"
@@ -371,7 +371,7 @@ class MeteoHistStatic(MeteoHist):
         fig.text(
             0,
             0,
-            f"lat: {self.settings['lat']}, lon: {self.settings['lon']}{last_date_text}",
+            f"lat: {self.coords[0]}, lon: {self.coords[1]}{last_date_text}",
             ha="left",
             va="bottom",
             fontsize=8,

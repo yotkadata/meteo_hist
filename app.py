@@ -8,7 +8,6 @@ from copy import deepcopy
 
 import extra_streamlit_components as stx
 import folium
-import pandas as pd
 import streamlit as st
 from pydantic.v1.utils import deep_update
 from streamlit_folium import folium_static

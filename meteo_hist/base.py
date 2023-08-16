@@ -77,8 +77,6 @@ class MeteoHist:
                 "frac": 1 / 12,
             },
             "save_file": True,
-            "lat": None,
-            "lon": None,
             "location_name": None,
             "metric": self.get_metric_info(self.metric),
             "alternate_months": {
