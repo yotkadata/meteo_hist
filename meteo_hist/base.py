@@ -90,12 +90,16 @@ class MeteoHist:
             "system": "metric",
         }
 
-        # Update default settings if a settings dict was provided
-        settings = (
-            deep_update(default_settings, settings)
-            if isinstance(settings, dict)
-            else default_settings
-        )
+        if isinstance(settings, dict):
+            # Filter out invalid keys
+            settings = {
+                key: settings[key] for key in settings if key in default_settings
+            }
+
+            # Update default settings if a settings dict was provided
+            settings = deep_update(default_settings, settings)
+        else:
+            settings = default_settings
 
         # Get location name if none was provided
         if settings["location_name"] is None:
