@@ -8,6 +8,7 @@ from copy import deepcopy
 
 import extra_streamlit_components as stx
 import folium
+import plotly.graph_objects as go
 import streamlit as st
 from pydantic.v1.utils import deep_update
 from streamlit_folium import folium_static
@@ -574,6 +575,50 @@ def display_context_info(graph: MeteoHist) -> None:
         )
 
 
+def adjust_layout(fig: go.Figure, width: int, height: int) -> go.Figure:
+    """
+    Adjust layout of plotly figure just for display in Streamlit.
+    (This is a hacky workaround for the fact that Streamlit and Plotly
+    have some deficiencies when it comes to responsive design.)
+    """
+    # Calculate factor based on viewport width
+    factor = st.session_state["viewport_width"] / 1000
+
+    # Adjust font sizes accordingly
+
+    font_size = int(fig["layout"]["font"]["size"] * factor)
+    font_size_title = int(fig["layout"]["title"]["font"]["size"] * factor)
+    font_size_datainfo = int(12 * factor)
+    margin_b = int(fig["layout"]["margin"]["b"] * factor)
+    margin_l = int(fig["layout"]["margin"]["l"] * factor)
+    margin_r = int(fig["layout"]["margin"]["r"] * factor)
+    margin_pad = int(fig["layout"]["margin"]["pad"] * factor)
+
+    # Set layout options just for the plot in Streamlit
+    layout_options = {
+        "width": width,
+        "height": height,
+        "font_size": font_size,
+        "title_font_size": font_size_title,
+        "margin": {
+            "b": margin_b,
+            "l": margin_l,
+            "r": margin_r,
+            "pad": margin_pad,
+        },
+    }
+    fig.update_layout(layout_options)
+
+    # Adjust position and font size of annotations
+    for annotation_name in ["Data source", "Data info"]:
+        fig.update_annotations(
+            selector={"name": annotation_name},
+            font_size=font_size_datainfo,
+        )
+
+    return fig
+
+
 def create_graph(inputs: dict) -> MeteoHist:
     """
     Create the graph.
@@ -626,15 +671,8 @@ def create_graph(inputs: dict) -> MeteoHist:
             # Create a copy of the figure to display in Streamlit
             figure_display = deepcopy(figure)
 
-            # Set layout options just for the plot in Streamlit
-            layout_options = {"width": width, "height": height, "font_size": 18}
-            figure_display.update_layout(layout_options)
-
-            # Adjust position and font size of annotations
-            for annotation_name in ["Data source", "Data info"]:
-                figure_display.update_annotations(
-                    selector={"name": annotation_name}, y=-0.11, font_size=14
-                )
+            # Adjust font sizes etc. for display in Streamlit
+            figure_display = adjust_layout(figure_display, width, height)
 
             # Display the plot
             st.plotly_chart(figure_display, theme=None, width=width, height=height)
@@ -734,6 +772,10 @@ with col2:
     # Save viewport width to session state
     st.session_state["viewport_width"] = streamlit_js_eval(
         js_expressions="window.innerWidth", key="ViewportWidth"
+    )
+
+    message_box.write(
+        streamlit_js_eval(js_expressions="window.innerWidth", key="ViewportWidth1")
     )
 
     # Show a random graph on start (but not when the user clicks the "Create" button)
