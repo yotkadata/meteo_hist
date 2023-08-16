@@ -168,7 +168,7 @@ class MeteoHistInteractive(MeteoHist):
                     x=self.data["date"],
                     y=self.data["p95"],
                     name="P95",
-                    line=dict(color="#000", width=1, dash="dot"),
+                    line={"color": "#000", "width": 1, "dash": "dot"},
                     showlegend=False,
                     hovertemplate=(
                         "%{y:.1f}"
@@ -182,7 +182,7 @@ class MeteoHistInteractive(MeteoHist):
                     x=self.data["date"],
                     y=self.data["p05"],
                     name="P05",
-                    line=dict(color="#000", width=1, dash="dot"),
+                    line={"color": "#000", "width": 1, "dash": "dot"},
                     showlegend=False,
                     hovertemplate=(
                         "%{y:.1f}"
@@ -206,7 +206,7 @@ class MeteoHistInteractive(MeteoHist):
                 x=self.data["date"],
                 y=self.data["mean"],
                 name="Mean",
-                line=dict(color="#000", width=2.5),
+                line={"color": "#000", "width": 2.5},
                 showlegend=False,
                 hovertemplate=(
                     "%{y:.1f}"
@@ -242,11 +242,7 @@ class MeteoHistInteractive(MeteoHist):
                     y=self.data[f"{self.year}_diff"],
                     base=self.data["mean"],
                     name=f"{self.year} value",
-                    marker=dict(
-                        color=colors,
-                        line_width=0,
-                        opacity=opacity,
-                    ),
+                    marker={"color": colors, "line_width": 0, "opacity": opacity},
                     showlegend=False,
                     hovertemplate=("%{y:.1f}" f"{super().get_units()}<extra></extra>"),
                 )
@@ -263,10 +259,10 @@ class MeteoHistInteractive(MeteoHist):
                 mode="markers",
                 name="Hoverinfo current date",
                 hovertemplate=("%{y:.1f}" f"{super().get_units()}" f"<extra></extra>"),
-                marker=dict(
-                    color=colors,  # This color will be shown on hover
-                    opacity=0,  # Hide the marker
-                ),
+                marker={
+                    "color": colors,  # This color will be shown on hover
+                    "opacity": 0,  # Hide the marker
+                },
             )
         )
 
@@ -376,11 +372,11 @@ class MeteoHistInteractive(MeteoHist):
                     y=[df_sorted[f"{self.year}"].iloc[i]],
                     mode="markers",
                     name=f"{conf['text']} {i+1}",
-                    marker=dict(
-                        color="rgba(255,255,255,0)",
-                        size=10,
-                        line=dict(color="#000", width=1),
-                    ),
+                    marker={
+                        "color": "rgba(255,255,255,0)",
+                        "size": 10,
+                        "line": {"color": "#000", "width": 1},
+                    },
                     showlegend=False,
                     hoverinfo="skip",
                 )
@@ -577,48 +573,40 @@ class MeteoHistInteractive(MeteoHist):
         """
 
         fig.update_layout(
-            title=dict(
-                text=(
+            title={
+                "text": (
                     f"<b>{self.settings['metric']['title']} in {self.settings['location_name']} "
                     f"{self.year}</b><br /><sup>{self.settings['metric']['subtitle']} "
                     f"({self.reference_period[0]}-{self.reference_period[1]})</sup>"
                 ),
-                font=dict(
-                    family="Lato",
-                    size=32,
-                    color="#1f1f1f",
-                ),
-                x=0.98,
-                y=0.93,
-                xanchor="right",
-                yanchor="top",
-            ),
+                "font": {"family": "Lato", "size": 32, "color": "#1f1f1f"},
+                "x": 0.98,
+                "y": 0.93,
+                "xanchor": "right",
+                "yanchor": "top",
+            },
             template="plotly_white",
             paper_bgcolor="#fff",
             plot_bgcolor="#fff",
-            margin=dict(b=70, l=60, r=20, t=100, pad=10),
+            margin={"b": 70, "l": 60, "r": 20, "t": 100, "pad": 10},
             hovermode="x",
             bargap=0,
             width=1000,
             height=600,
-            font=dict(
-                family="Lato",
-                size=14,
-                color="#1f1f1f",
-            ),
-            xaxis=dict(
-                dtick="M1",  # Tick every month
-                hoverformat="%e %B",
-                range=[f"{self.year-1}-12-20", f"{self.year+1}-01-10"],
-                showgrid=False,
-                tickformat="%b",  # Month name
-                ticklabelmode="period",  # Center tick labels
-            ),
-            yaxis=dict(
-                range=super().get_y_limits(),
-                showgrid=True,
-                ticksuffix=super().get_units(),
-            ),
+            font={"family": "Lato", "size": 14, "color": "#1f1f1f"},
+            xaxis={
+                "dtick": "M1",  # Tick every month
+                "hoverformat": "%e %B",
+                "range": [f"{self.year-1}-12-20", f"{self.year+1}-01-10"],
+                "showgrid": False,
+                "tickformat": "%b",  # Month name
+                "ticklabelmode": "period",  # Center tick labels
+            },
+            yaxis={
+                "range": super().get_y_limits(),
+                "showgrid": True,
+                "ticksuffix": super().get_units(),
+            },
         )
 
         # Update layout with user defined options
