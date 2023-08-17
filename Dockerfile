@@ -7,7 +7,9 @@ RUN apt-get update && \
     apt-get install -y \
     wget \
     unzip \
-    fontconfig
+    fontconfig && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install Lato font
 RUN mkdir -p /usr/share/fonts/truetype/lato && \
@@ -15,13 +17,17 @@ RUN mkdir -p /usr/share/fonts/truetype/lato && \
     unzip /tmp/Lato.zip -d /usr/share/fonts/truetype/lato && \
     fc-cache -f -v
 
+# Install Python dependencies
 COPY requirements.txt .
-
 RUN pip install -r requirements.txt
 
+# Copy app files
 COPY *.py .
 COPY *.css .
 COPY .streamlit/config.toml .streamlit/config.toml
+COPY ./app/ app/
+COPY ./meteo_hist/ meteo_hist/
+COPY ./output/ output/
 
 EXPOSE 8501
 
