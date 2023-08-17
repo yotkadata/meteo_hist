@@ -2,7 +2,7 @@
 
 # MeteoHist - Historical Meteo Graphs
 
-## A Streamlit app to create temperature and precipitation graphs for places around the world.
+## A Streamlit app to create interactive temperature and precipitation graphs for places around the world.
 
 This app allows to create temperature and precipitation (rain, showers, and snowfall) graphs that compare the values of a given location in a given year to the values of a **reference period** at the same place.
 
@@ -10,9 +10,13 @@ The reference period **defaults to 1961-1990** which [according](https://public.
 
 The **peaks** on the graph show how the displayed year's values deviate from the mean of the reference period. For temperature graphs, this means that the more and the higher the red peaks, the more "hotter days than usual" have been observed. The blue peaks indicate days colder than the historical mean. Precipitation graphs show blue peaks on top which means "more precipitation than normal" and in red "less than normal".
 
-The plot is created using Python's **Matplotlib** library.
+The interactive plot is created using Python's **Plotly** library. In a first version with static images, **Matplotlib** came to use.
 
-By default, mean values of the reference period are **smoothed** using Locally Weighted Scatterplot Smoothing (LOWESS). The value can be adjusted under "advanced settings" in the app.
+By default, mean values of the reference period are **smoothed** using [Locally Weighted Scatterplot Smoothing (LOWESS)](https://www.statsmodels.org/devel/generated/statsmodels.nonparametric.smoothers_lowess.lowess.html). The value can be adjusted under "advanced settings" in the app.
+
+### Interactive version
+
+In the latest version (first published on 17 August 2023), the graphs are displayed interactively on larger screens. That means you can hover over the graph and get the exact values displayed for every day. You can also zoom in to see parts of the plot.
 
 ### Data
 
@@ -37,32 +41,32 @@ Available metrics are:
 - **Location to display:** Name of the location you want to display. A search at Openstreetmap's Nominatim will be performed to find the location and get latitude and longitude.
 - **Year to show:** Year to be compared to reference period.
 - **Reference period:** The reference period is used to calculate the historical average of the daily values. The average is then used to compare the daily values of the selected year. 1961-1990 (default) is currently considered the best "long-term climate change assessment" by the World Meteorological Organization (WMO).
-- **Peaks to be annotated:** Number of maximum peaks to be annotated (default: 1). If peaks are close together, the text might overlap. In this case, reduce the number of peaks.
-- **Units:** Whether to use Metric System (°C, mm - default) or Imperial System (°F, In).
-- **Smoothing:** Degree of smoothing to apply to the historical data. 0 means no smoothing. The higher the value, the more smoothing is applied. Smoothing is done using LOWESS (locally weighted scatterplot smoothing).
-- **Peak method:** Method to determine the peaks. Either the difference to the historical mean (default) or the difference to the 95 percentile. The percentile method focuses more on extreme events, while the mean method focuses more on the difference to the historical average.
-- **Emphasize peaks:** If checked, peaks that leave the gray area between the 5 and 95 percentile will be highlighted more.
+- **Peaks to be annotated:** Number of maximum and minimum peaks to be annotated (default: 1). If peaks are too close together, the next highest/lowest peak is selected to avoid overlapping.
+- **Unit system:** Whether to use Metric System (°C, mm - default) or Imperial System (°F, In).
+- **Smoothing:** Degree of smoothing to apply to the historical data. 0 means no smoothing. The higher the value, the more smoothing is applied. Smoothing is done using LOWESS (Locally Weighted Scatterplot Smoothing).
+- **Peak method:** Method to determine the peaks. Either the difference to the historical mean (default) or the difference to the 05/95 percentiles. The percentile method focuses more on extreme events, while the mean method focuses more on the difference to the historical average.
+- **Emphasize peaks:** If checked, peaks that leave the gray area between the 5 and 95 percentiles will be highlighted more.
 
 ### Examples
 
 <p float="left">
-  <a href="https://github.com/yotkadata/meteo_hist/blob/main/examples/duisburg-germany-temperature_max-2019_ref-1961-1990.png">
-    <img src="https://github.com/yotkadata/meteo_hist/blob/main/examples/duisburg-germany-temperature_max-2019_ref-1961-1990.png?raw=true" width="250" />
+  <a href="https://github.com/yotkadata/meteo_hist/blob/main/examples/duisburg-germany-temperature-max-2019-ref-1961-1990.png">
+    <img src="https://github.com/yotkadata/meteo_hist/blob/main/examples/duisburg-germany-temperature-max-2019-ref-1961-1990.png?raw=true" width="250" />
   </a>
-  <a href="https://github.com/yotkadata/meteo_hist/blob/main/examples/bad-neuenahr-ahrweiler-germany-precipitation_rolling-2021_ref-1961-1990.png">
-    <img src="https://github.com/yotkadata/meteo_hist/blob/main/examples/bad-neuenahr-ahrweiler-germany-precipitation_rolling-2021_ref-1961-1990.png?raw=true" width="250" />
+  <a href="https://github.com/yotkadata/meteo_hist/blob/main/examples/bad-neuenahr-ahrweiler-germany-precipitation-rolling-2021-ref-1961-1990.png">
+    <img src="https://github.com/yotkadata/meteo_hist/blob/main/examples/bad-neuenahr-ahrweiler-germany-precipitation-rolling-2021-ref-1961-1990.png?raw=true" width="250" />
   </a>
-  <a href="https://github.com/yotkadata/meteo_hist/blob/main/examples/addis-ababa-ethiopia-temperature_mean-2022_ref-1961-1990.png">
-    <img src="https://github.com/yotkadata/meteo_hist/blob/main/examples/addis-ababa-ethiopia-temperature_mean-2022_ref-1961-1990.png?raw=true" width="250" />
+  <a href="https://github.com/yotkadata/meteo_hist/blob/main/examples/addis-ababa-ethiopia-temperature-mean-2022-ref-1961-1990.png">
+    <img src="https://github.com/yotkadata/meteo_hist/blob/main/examples/addis-ababa-ethiopia-temperature-mean-2022-ref-1961-1990.png?raw=true" width="250" />
   </a>
-  <a href="https://github.com/yotkadata/meteo_hist/blob/main/examples/atlantic-ocean-temperature_mean-2023_ref-1961-1990.png">
-    <img src="https://github.com/yotkadata/meteo_hist/blob/main/examples/atlantic-ocean-temperature_mean-2023_ref-1961-1990.png?raw=true" width="250" />
+  <a href="https://github.com/yotkadata/meteo_hist/blob/main/examples/atlantic-ocean-temperature-mean-2023-ref-1961-1990.png">
+    <img src="https://github.com/yotkadata/meteo_hist/blob/main/examples/atlantic-ocean-temperature-mean-2023-ref-1961-1990.png?raw=true" width="250" />
   </a>
-  <a href="https://github.com/yotkadata/meteo_hist/blob/main/examples/key-west-united-states-temperature_max-2023_ref-1961-1990.png">
-    <img src="https://github.com/yotkadata/meteo_hist/blob/main/examples/key-west-united-states-temperature_max-2023_ref-1961-1990.png?raw=true" width="250" />
+  <a href="https://github.com/yotkadata/meteo_hist/blob/main/examples/key-west-united-states-temperature-max-2023-ref-1961-1990.png">
+    <img src="https://github.com/yotkadata/meteo_hist/blob/main/examples/key-west-united-states-temperature-max-2023-ref-1961-1990.png?raw=true" width="250" />
   </a>
-  <a href="https://github.com/yotkadata/meteo_hist/blob/main/examples/mumbai-india-precipitation_cum-2022_ref-1961-1990.png">
-    <img src="https://github.com/yotkadata/meteo_hist/blob/main/examples/mumbai-india-precipitation_cum-2022_ref-1961-1990.png?raw=true" width="250" />
+  <a href="https://github.com/yotkadata/meteo_hist/blob/main/examples/mumbai-india-precipitation-cum-2022-ref-1961-1990.png">
+    <img src="https://github.com/yotkadata/meteo_hist/blob/main/examples/mumbai-india-precipitation-cum-2022-ref-1961-1990.png?raw=true" width="250" />
   </a>
 </p>
 
