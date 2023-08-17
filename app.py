@@ -3,6 +3,7 @@ Streamlit app.
 """
 
 import datetime as dt
+import time
 import urllib.parse
 from copy import deepcopy
 
@@ -218,7 +219,7 @@ def create_share_url(params: dict) -> str:
     return f"{get_base_url()}?{urllib.parse.urlencode(params)}"
 
 
-def build_location_by_name(location: str) -> tuple[float, float, str]:
+def build_location_by_name(location: str, message_box) -> tuple[float, float, str]:
     """
     Build location by name.
     """
@@ -237,7 +238,9 @@ def build_location_by_name(location: str) -> tuple[float, float, str]:
         return lat, lon, location_name
 
 
-def build_location_by_coords(lat: float, lon: float, display_name: str) -> str:
+def build_location_by_coords(
+    lat: float, lon: float, display_name: str, message_box
+) -> str:
     """
     Build location by coordinates.
     """
@@ -482,7 +485,7 @@ def build_form(method: str = "by_name", params: dict = None) -> dict:
         return None
 
 
-def process_form(form_values: dict) -> dict:
+def process_form(form_values: dict, message_box) -> dict:
     """
     Process form values.
     """
@@ -496,7 +499,9 @@ def process_form(form_values: dict) -> dict:
             message_box.error("Please enter a location name.")
             return None
 
-        lat, lon, location = build_location_by_name(form_values["location"])
+        lat, lon, location = build_location_by_name(
+            form_values["location"], message_box
+        )
         form_values["lat"] = lat
         form_values["lon"] = lon
         form_values["location_name"] = location
@@ -522,7 +527,10 @@ def process_form(form_values: dict) -> dict:
             return None
 
         form_values["location_name"] = build_location_by_coords(
-            form_values["lat"], form_values["lon"], form_values["display_name"]
+            form_values["lat"],
+            form_values["lon"],
+            form_values["display_name"],
+            message_box,
         )
         if form_values["location_name"] is None:
             return None
@@ -621,7 +629,7 @@ def adjust_layout(fig: go.Figure, width: int, height: int) -> go.Figure:
     return fig
 
 
-def create_graph(inputs: dict) -> MeteoHist:
+def create_graph(inputs: dict, plot_placeholder) -> MeteoHist:
     """
     Create the graph.
     """
@@ -688,32 +696,10 @@ def create_graph(inputs: dict) -> MeteoHist:
     return plot
 
 
-# Set page title
-st.set_page_config(page_title="Historical Meteo Graphs", layout="wide")
-
-# Include custom CSS
-with open("style.css", encoding="utf-8") as css:
-    st.markdown(f"<style>{css.read()}</style>", unsafe_allow_html=True)
-
-# Define default values for the form
-if "form_defaults" not in st.session_state:
-    st.session_state["form_defaults"] = get_form_defaults()
-
-# Set base URL
-if "base_url" not in st.session_state:
-    st.session_state["base_url"] = "https://yotka.org/meteo-hist/"
-
-col1, col2 = st.columns([1, 3])
-
-with col1:
-    # Set page title
-    st.markdown(
-        "<h3 style='padding-top:0;'>Historical Meteo Graphs</h2>",
-        unsafe_allow_html=True,
-    )
-
-    # Create a placeholder for messages
-    message_box = st.empty()
+def build_menu() -> None:
+    """
+    Create the column holding themenu.
+    """
 
     # Get query parameters
     query_params = get_query_params()
@@ -754,10 +740,12 @@ with col1:
         st.experimental_set_query_params()
 
     # Build form
-    input_values = build_form(method=active_tab, params=query_params)
+    st.session_state["input_values"] = build_form(
+        method=active_tab, params=query_params
+    )
 
     # Create button to show random graph
-    random_graph = st.button("Show random")
+    st.session_state["random_graph"] = st.button("Show random")
 
     st.markdown(
         """
@@ -768,30 +756,40 @@ with col1:
         unsafe_allow_html=True,
     )
 
-with col2:
-    plot_placeholder = st.empty()
+
+def build_content(plot_placeholder, message_box) -> None:
+    """
+    Create the column holding the content.
+    """
 
     # Save viewport width to session state
     st.session_state["viewport_width"] = streamlit_js_eval(
         js_expressions="window.innerWidth", key="ViewportWidth"
     )
 
+    # Wait for viewport width to be set
+    while st.session_state["viewport_width"] is None:
+        time.sleep(0.1)
+
     # Show a random graph on start (but not when the user clicks the "Create" button)
-    if "last_generated" not in st.session_state and input_values is None:
+    if (
+        "last_generated" not in st.session_state
+        and st.session_state["input_values"] is None
+    ):
         if "start_img" not in st.session_state:
             st.session_state["start_img"] = MeteoHist.show_random()
         plot_placeholder.image(st.session_state["start_img"])
 
-    if input_values is not None:
+    if st.session_state["input_values"] is not None:
         # Process form values
-        input_processed = process_form(input_values)
+        input_processed = process_form(st.session_state["input_values"], message_box)
 
         # Make sure lat/lon values are set
         if isinstance(input_processed, dict) and not [
             x for x in (input_processed["lat"], input_processed["lon"]) if x is None
         ]:
             # Create figure for the graph
-            plot_object = create_graph(input_processed)
+            plot_object = create_graph(input_processed, plot_placeholder)
 
             # Display some info about the data
             display_context_info(plot_object)
@@ -817,7 +815,7 @@ with col2:
                     folium.TileLayer("Stamen Terrain").add_to(m)
                     folium_static(m)
 
-    if random_graph:
+    if st.session_state["random_graph"]:
         st.write("Random graph from the list of graphs created before.")
         with plot_placeholder:
             img = MeteoHist.show_random()
@@ -826,3 +824,57 @@ with col2:
                 st.image(img)
             else:
                 st.error("No graph found.")
+
+
+def main() -> None:
+    """
+    Main function.
+    """
+    # Set page title
+    st.set_page_config(page_title="Historical Meteo Graphs", layout="wide")
+
+    # Get screen width
+    st.session_state["screen_width"] = streamlit_js_eval(
+        js_expressions="screen.width", key="SCR"
+    )
+
+    # Wait until screen width is set
+    while st.session_state["screen_width"] is None:
+        time.sleep(0.1)
+
+    # Include custom CSS
+    with open("style.css", encoding="utf-8") as css:
+        st.markdown(f"<style>{css.read()}</style>", unsafe_allow_html=True)
+
+    # Define default values for the form
+    if "form_defaults" not in st.session_state:
+        st.session_state["form_defaults"] = get_form_defaults()
+
+    # Set base URL
+    if "base_url" not in st.session_state:
+        st.session_state["base_url"] = "https://yotka.org/meteo-hist/"
+
+    # If screen size is large enough, use two columns
+    if st.session_state["screen_width"] > 1200:
+        col1, col2 = st.columns([1, 3])
+    else:
+        col1, col2 = st.container(), st.container()
+
+    with col1:
+        # Set page title
+        st.markdown(
+            "<h3 style='padding-top:0;'>Historical Meteo Graphs</h2>",
+            unsafe_allow_html=True,
+        )
+
+        # Create a placeholder for messages
+        message_box = st.empty()
+        build_menu()
+
+    with col2:
+        plot_placeholder = st.empty()
+        build_content(plot_placeholder, message_box)
+
+
+if __name__ == "__main__":
+    main()
