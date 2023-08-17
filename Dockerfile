@@ -27,6 +27,7 @@ COPY *.css .
 COPY .streamlit/config.toml .streamlit/config.toml
 COPY ./app/ app/
 COPY ./meteo_hist/ meteo_hist/
+COPY ./examples/ examples/
 
 EXPOSE 8501
 
