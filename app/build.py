@@ -90,7 +90,10 @@ def build_content(plot_placeholder, message_box) -> None:
     )
 
     # Wait for viewport width to be set
-    while st.session_state["viewport_width"] is None:
+    while (
+        "viewport_width" not in st.session_state
+        or st.session_state["viewport_width"] is None
+    ):
         time.sleep(0.1)
 
     # Show a random graph on start (but not when the user clicks the "Create" button)

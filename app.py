@@ -25,7 +25,10 @@ def main() -> None:
     )
 
     # Wait until screen width is set
-    while st.session_state["screen_width"] is None:
+    while (
+        "screen_width" not in st.session_state
+        or st.session_state["screen_width"] is None
+    ):
         time.sleep(0.1)
 
     # Include custom CSS
