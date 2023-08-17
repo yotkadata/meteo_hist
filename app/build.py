@@ -104,8 +104,8 @@ def build_content(plot_placeholder, message_box) -> None:
     ):
         if "start_img" not in st.session_state:
             st.session_state["start_img"] = MeteoHist.show_random()
-            
-        st.session_state["start_img"] is not None:
+
+        if st.session_state["start_img"] is not None:
             plot_placeholder.image(st.session_state["start_img"])
 
     if st.session_state["input_values"] is not None:
