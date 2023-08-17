@@ -67,11 +67,16 @@ def create_graph(inputs: dict, plot_placeholder) -> MeteoHist:
             # Adjust font sizes etc. for display in Streamlit
             figure_display = adjust_layout(figure_display, width, height)
 
-            # Display the plot
-            st.plotly_chart(figure_display, theme=None, width=width, height=height)
+            # Display an interactive plot for large screens
+            if st.session_state["screen_width"] >= 1200:
+                st.plotly_chart(figure_display, theme=None, width=width, height=height)
 
     # Save the plot as a file
-    plot.save_plot_to_file()
+    file_path = plot.save_plot_to_file()
+
+    # Display the plot as an image for small screens
+    if st.session_state["screen_width"] < 1200:
+        st.image(file_path)
 
     # Save the file path to session state
     st.session_state["last_generated"] = file_path
