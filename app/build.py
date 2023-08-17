@@ -125,7 +125,7 @@ def build_content(plot_placeholder, message_box) -> None:
             with st.expander("Show map"):
                 with st.spinner("Creating map..."):
                     # Show a map
-                    m = folium.Map(
+                    folium_map = folium.Map(
                         location=[input_processed["lat"], input_processed["lon"]],
                         zoom_start=4,
                         height=500,
@@ -133,9 +133,9 @@ def build_content(plot_placeholder, message_box) -> None:
                     folium.Marker(
                         [input_processed["lat"], input_processed["lon"]],
                         popup=input_processed["location_name"],
-                    ).add_to(m)
-                    folium.TileLayer("Stamen Terrain").add_to(m)
-                    folium_static(m)
+                    ).add_to(folium_map)
+                    folium.TileLayer("Stamen Terrain").add_to(folium_map)
+                    folium_static(folium_map)
 
     if st.session_state["random_graph"]:
         st.write("Random graph from the list of graphs created before.")
