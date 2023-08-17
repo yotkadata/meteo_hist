@@ -3,6 +3,7 @@ Streamlit app
 Functions related to building the page.
 """
 
+import base64
 import time
 
 import extra_streamlit_components as stx
@@ -114,10 +115,22 @@ def build_content(plot_placeholder, message_box) -> None:
             x for x in (input_processed["lat"], input_processed["lon"]) if x is None
         ]:
             # Create figure for the graph
-            plot_object = create_graph(input_processed, plot_placeholder)
+            plot_object, file_path = create_graph(input_processed, plot_placeholder)
 
             # Display some info about the data
             display_context_info(plot_object)
+
+            # Display a download link
+            try:
+                with open(file_path, "rb") as file:
+                    img_b64 = base64.b64encode(file.read()).decode()
+
+                    st.markdown(
+                        f'<a href="data:file/png;base64,{img_b64}" download="{file_path.split("/")[-1]}">Download file</a>',
+                        unsafe_allow_html=True,
+                    )
+            except FileNotFoundError:
+                st.write("File not found.")
 
             st.write("")
 

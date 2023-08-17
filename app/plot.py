@@ -81,7 +81,7 @@ def create_graph(inputs: dict, plot_placeholder) -> MeteoHist:
     # Save the file path to session state
     st.session_state["last_generated"] = file_path
 
-    return plot
+    return plot, file_path
 
 
 def adjust_layout(fig: go.Figure, width: int, height: int) -> go.Figure:
