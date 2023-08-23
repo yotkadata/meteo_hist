@@ -107,6 +107,10 @@ To save the generated files outside the Docker container, you can add a binding 
 docker run -d --name meteo_hist -p 8501:8501 -v /home/user/path/output/:/app/output meteo_hist:latest
 ```
 
+### Using the class without the web interface
+
+It is also possible to use the Python class directly, without the web app. See the `notebooks` directory for examples.
+
 ### Thanks
 
 - This app was inspired by [plots](https://twitter.com/dr_xeo/status/1656933695511511043) made by [Dr. Dominic Royé](https://github.com/dominicroye) - thanks for the idea and the exchange about it.
