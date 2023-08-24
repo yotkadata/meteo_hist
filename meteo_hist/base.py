@@ -42,7 +42,7 @@ class MeteoHist:
         settings : dict, optional
             Settings dictionary, by default None.
         """
-        self.coords = coords
+        self.coords = (round(coords[0], 6), round(coords[1], 6))
         self.metric = metric
         self.settings = None
         self.update_settings(settings)
