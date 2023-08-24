@@ -319,7 +319,9 @@ class MeteoHist:
                 [
                     ("min", "min"),
                     ("p05", lambda x: np.nanpercentile(x, 5)),
+                    ("p40", lambda x: np.nanpercentile(x, 40)),
                     ("mean", "mean"),
+                    ("p60", lambda x: np.nanpercentile(x, 60)),
                     ("p95", lambda x: np.nanpercentile(x, 95)),
                     ("max", "max"),
                 ]
@@ -358,6 +360,70 @@ class MeteoHist:
         )
 
         return df_g
+
+    def get_stats(self, year: int = None) -> dict:
+        """
+        Get statistics for a given year
+        """
+
+        if year is None:
+            year = self.year
+
+        data = self.data.copy()
+
+        if year != self.year:
+            data_raw = self.data_raw[self.data_raw["date"].dt.year == year].copy()
+
+            data_raw["dayofyear"] = data_raw["date"].dt.dayofyear
+
+            # Remove all Feb 29 rows to get rid of leap days
+            data_raw = data_raw[
+                ~((data_raw["date"].dt.month == 2) & (data_raw["date"].dt.day == 29))
+            ].copy()
+
+            # Adjust "dayofyear" values for days after February 29th in leap years
+            data_raw["dayofyear"] = data_raw["dayofyear"].where(
+                ~((data_raw["date"].dt.month > 2) & (data_raw["date"].dt.is_leap_year)),
+                data_raw["dayofyear"] - 1,
+            )
+
+            data[f"{year}"] = data_raw["value"].reset_index(drop=True)
+
+        stats = {}
+
+        # Number of days above/below reference period mean
+        stats["days_above_mean"] = data[data[f"{year}"] > data["mean"]].shape[0]
+        stats["days_below_mean"] = data[data[f"{year}"] < data["mean"]].shape[0]
+
+        # Number of days above/below 95 percentile (p95)
+        stats["days_above_p95"] = data[data[f"{year}"] > data["p95"]].shape[0]
+        stats["days_below_p05"] = data[data[f"{year}"] < data["p05"]].shape[0]
+
+        # Number of days between mean and p05/p95
+        stats["days_between_mean_p95"] = data[
+            (data[f"{year}"] > data["mean"]) & (data[f"{year}"] <= data["p95"])
+        ].shape[0]
+        stats["days_between_mean_p05"] = data[
+            (data[f"{year}"] < data["mean"]) & (data[f"{year}"] >= data["p05"])
+        ].shape[0]
+
+        # Number of days between mean and p60/p40
+        stats["days_between_mean_p60"] = data[
+            (data[f"{year}"] > data["mean"]) & (data[f"{year}"] <= data["p60"])
+        ].shape[0]
+        stats["days_between_mean_p40"] = data[
+            (data[f"{year}"] < data["mean"]) & (data[f"{year}"] >= data["p40"])
+        ].shape[0]
+
+        # Number of days between p60/p40 and p95/p05
+        stats["days_between_p60_p95"] = data[
+            (data[f"{year}"] > data["p60"]) & (data[f"{year}"] <= data["p95"])
+        ].shape[0]
+        stats["days_between_p40_p05"] = data[
+            (data[f"{year}"] < data["p40"]) & (data[f"{year}"] >= data["p05"])
+        ].shape[0]
+
+        return stats
 
     def get_y_limits(self) -> tuple[int, int]:
         """
