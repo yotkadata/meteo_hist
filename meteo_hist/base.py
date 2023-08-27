@@ -239,18 +239,6 @@ class MeteoHist:
         Transforms the dataframe to be used for plotting.
         """
 
-        def p05(series: pd.Series) -> float:
-            """
-            Calculates the 5th percentile of a pandas series.
-            """
-            return np.nanpercentile(series, 5)
-
-        def p95(series: pd.Series) -> float:
-            """
-            Calculates the 95th percentile of a pandas series.
-            """
-            return np.nanpercentile(series, 95)
-
         df_f = df_raw.copy()
 
         # Add columns with day of year and year
@@ -295,7 +283,15 @@ class MeteoHist:
         # Group by day of year and calculate min, 5th percentile, mean, 95th percentile, and max
         df_g = (
             df_g.groupby("dayofyear")["value"]
-            .agg(["min", p05, "mean", p95, "max"])
+            .agg(
+                [
+                    ("min", "min"),
+                    ("p05", lambda x: np.nanpercentile(x, 5)),
+                    ("mean", "mean"),
+                    ("p95", lambda x: np.nanpercentile(x, 95)),
+                    ("max", "max"),
+                ]
+            )
             .reset_index()
         )
 
