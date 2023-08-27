@@ -88,20 +88,17 @@ class MeteoHistInteractive(MeteoHist):
         Add alternating background color for months.
         """
 
-        # Define dict with first and last day of each month
+        # Define dict with first and last day of each month, ignoring leap days
         months_with_days = {
-            1: (1, 31),
-            2: (32, 59),
-            3: (60, 90),
-            4: (91, 120),
-            5: (121, 151),
-            6: (152, 181),
-            7: (182, 212),
-            8: (213, 243),
-            9: (244, 273),
-            10: (274, 304),
-            11: (305, 334),
-            12: (335, 365),
+            month: (
+                dt.datetime(self.year, month, 1),
+                dt.datetime(
+                    self.year,
+                    month,
+                    28 if month == 2 else 30 if month in [4, 6, 9, 11] else 31,
+                ),
+            )
+            for month in range(1, 13)
         }
 
         for month, days in months_with_days.items():
@@ -122,8 +119,8 @@ class MeteoHistInteractive(MeteoHist):
             fig.add_shape(
                 type="rect",
                 yref="paper",
-                x0=self.dayofyear_to_date(self.year, days[0], True),
-                x1=self.dayofyear_to_date(self.year, days[1], True),
+                x0=days[0],
+                x1=days[1],
                 y0=0,
                 y1=1,
                 fillcolor=bg_color,
