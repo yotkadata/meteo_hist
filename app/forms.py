@@ -191,7 +191,7 @@ def build_form(method: str = "by_name", params: dict = None) -> dict:
 
             # Select method to calculate peaks
             peak_methods = ["mean", "percentile"]
-            peak_methods_names = ["Historical mean", "95 percentile"]
+            peak_methods_names = ["Historical mean", "5/95 percentile"]
 
             peak_method = st.radio(
                 "Peak method - Difference to:",
@@ -199,9 +199,9 @@ def build_form(method: str = "by_name", params: dict = None) -> dict:
                 index=peak_methods.index(defaults["peak_method"]),
                 help="""
                     Method to determine the peaks. Either the difference to the historical
-                    mean or the difference to the 95 percentile. The percentile method focuses
-                    more on extreme events, while the mean method focuses more on the
-                    difference to the historical average.
+                    mean or the difference to the 5/95 percentile respectively. The percentile
+                    method focuses more on extreme events, while the mean method focuses more
+                    on the difference to the historical average.
                     """,
             )
             form_values["peak_method"] = peak_methods[
