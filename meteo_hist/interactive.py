@@ -83,6 +83,24 @@ class MeteoHistInteractive(MeteoHist):
 
         return colors
 
+    def get_opacity(self) -> np.ndarray:
+        """
+        Get the opacity for the plot
+        """
+        # Define array of ones with same shape as yearly values
+        opacity = np.ones_like(self.data[f"{self.year}"])
+
+        if self.settings["peak_alpha"]:
+            # Create mask for values between p05 and p95
+            mask_between = (self.data[f"{self.year}"] >= self.data["p05"]) & (
+                self.data[f"{self.year}"] <= self.data["p95"]
+            )
+
+            # Set opacity to 0.6 for values between p05 and p95
+            opacity[mask_between] = 0.6
+
+        return opacity
+
     def add_alternating_bg(self, fig: go.Figure) -> go.Figure:
         """
         Add alternating background color for months.
@@ -233,14 +251,7 @@ class MeteoHistInteractive(MeteoHist):
         Plot the difference between the year's value and the long-term mean.
         """
 
-        # Define opacity depending on whether peak alpha is enabled
-        opacity = (
-            self.data[f"{self.year}_alpha"]
-            if self.settings["peak_alpha"]
-            else np.ones(len(self.data))
-        )
-
-        # Get colorscale
+        opacity = self.get_opacity()
         colors = self.get_colorscale()
 
         # Display a simpler and faster plot if chart_type is "bar"

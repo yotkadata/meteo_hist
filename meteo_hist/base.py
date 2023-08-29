@@ -320,12 +320,6 @@ class MeteoHist:
         # Add column that holds the difference between the year's value and the mean
         df_g[f"{year}_diff"] = df_g[f"{year}"] - df_g["mean"]
 
-        # Add column that holds alpha values for the year's value to highlight outliers
-        df_g[f"{year}_alpha"] = df_g.apply(
-            lambda x: 1 if x[f"{year}"] > x["p95"] or x[f"{year}"] < x["p05"] else 0.6,
-            axis=1,
-        ).fillna(0)
-
         # Add a column with the date
         df_g["date"] = df_g["dayofyear"].apply(
             lambda x: self.dayofyear_to_date(year, x, True)
