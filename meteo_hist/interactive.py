@@ -5,6 +5,7 @@ Class to generate an interactive version of the plot using Plotly.
 import datetime as dt
 
 import numpy as np
+import pandas as pd
 import plotly.graph_objects as go
 from plotly.express.colors import sample_colorscale
 
@@ -24,10 +25,11 @@ class MeteoHistInteractive(MeteoHist):
         reference_period: tuple[int, int] = (1961, 1990),
         metric: str = "temperature_mean",
         settings: dict = None,
+        data: pd.DataFrame = None,
         layout_options: dict = None,
     ):
         # Call the base class constructor using super()
-        super().__init__(coords, year, reference_period, metric, settings)
+        super().__init__(coords, year, reference_period, metric, settings, data)
         self.layout_options = layout_options
         self.fig = None
 

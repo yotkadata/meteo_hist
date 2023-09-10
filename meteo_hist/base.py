@@ -29,6 +29,7 @@ class MeteoHist:
         reference_period: tuple[int, int] = (1961, 1990),
         metric: str = "temperature_mean",
         settings: dict = None,
+        data: pd.DataFrame = None,
     ):
         """
         Parameters
@@ -47,7 +48,7 @@ class MeteoHist:
         self.settings = None
         self.update_settings(settings)
         self.year = year if year is not None else dt.datetime.now().year
-        self.data_raw = self.get_data(coords)
+        self.data_raw = data if data is not None else self.get_data(coords)
         self.data = self.transform_data(self.data_raw, self.year, reference_period)
         self.reference_period = reference_period
         self.ref_nans = 0
