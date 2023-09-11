@@ -371,23 +371,22 @@ class MeteoHist:
 
         data = self.data.copy()
 
-        if year != self.year:
-            data_raw = self.data_raw[self.data_raw["date"].dt.year == year].copy()
+        data_raw = self.data_raw[self.data_raw["date"].dt.year == year].copy()
 
-            data_raw["dayofyear"] = data_raw["date"].dt.dayofyear
+        data_raw["dayofyear"] = data_raw["date"].dt.dayofyear
 
-            # Remove all Feb 29 rows to get rid of leap days
-            data_raw = data_raw[
-                ~((data_raw["date"].dt.month == 2) & (data_raw["date"].dt.day == 29))
-            ].copy()
+        # Remove all Feb 29 rows to get rid of leap days
+        data_raw = data_raw[
+            ~((data_raw["date"].dt.month == 2) & (data_raw["date"].dt.day == 29))
+        ].copy()
 
-            # Adjust "dayofyear" values for days after February 29th in leap years
-            data_raw["dayofyear"] = data_raw["dayofyear"].where(
-                ~((data_raw["date"].dt.month > 2) & (data_raw["date"].dt.is_leap_year)),
-                data_raw["dayofyear"] - 1,
-            )
+        # Adjust "dayofyear" values for days after February 29th in leap years
+        data_raw["dayofyear"] = data_raw["dayofyear"].where(
+            ~((data_raw["date"].dt.month > 2) & (data_raw["date"].dt.is_leap_year)),
+            data_raw["dayofyear"] - 1,
+        )
 
-            data[f"{year}"] = data_raw["value"].reset_index(drop=True)
+        data[f"{year}"] = data_raw["value"].reset_index(drop=True)
 
         stats = {}
 
