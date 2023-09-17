@@ -15,6 +15,8 @@ from pydantic.v1.utils import deep_update
 from statsmodels.nonparametric.smoothers_lowess import lowess
 from unidecode import unidecode
 
+from meteo_hist import OpenMeteoAPIException
+
 
 class MeteoHist:
     """
@@ -205,8 +207,37 @@ class MeteoHist:
         if "precipitation" in metric:
             url = url + f"&precipitation_unit={unit_names[unit]}"
 
-        # Get the data from the API
-        data = requests.get(url, timeout=30)
+        try:
+            # Get data from API
+            data = requests.get(url, timeout=30)
+
+            # Check if a reason was returned
+            reason = f" ({data.reason})" if hasattr(data, "reason") else ""
+
+            # Raise a custom error if the status code is not 200 or 400
+            if data.status_code not in [200, 400]:
+                raise OpenMeteoAPIException(
+                    (
+                        "Failed retrieving data from open-meteo.com. \n"
+                        f"Server returned HTTP code: {data.status_code}{reason} on following URL: \n"
+                        f"{data.url}"
+                    )
+                )
+
+            # Check for other HTTP error codes and handle them as needed
+            data.raise_for_status()
+
+            # Raise custom error if data does not have the expected format
+            if not "daily" in data.json():
+                raise OpenMeteoAPIException(
+                    (
+                        "Error receiving data from open-meteo.com: Response does not contain 'daily'."
+                        f"URL: {data.url}"
+                    )
+                )
+
+        except requests.ConnectionError as exc:
+            raise (exc)
 
         # Create new Dataframe from column "daily"
         df_raw = pd.DataFrame(
