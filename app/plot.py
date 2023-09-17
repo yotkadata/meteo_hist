@@ -8,7 +8,7 @@ from copy import deepcopy
 import plotly.graph_objects as go
 import streamlit as st
 
-from meteo_hist import MeteoHist, MeteoHistInteractive
+from meteo_hist import MeteoHist, MeteoHistInteractive, OpenMeteoAPIException
 
 
 def create_graph(inputs: dict, plot_placeholder) -> MeteoHist:
@@ -44,14 +44,20 @@ def create_graph(inputs: dict, plot_placeholder) -> MeteoHist:
                 plot.update_settings(inputs)
 
             else:
-                # Instantiate the plot object
-                plot = MeteoHistInteractive(
-                    coords=(inputs["lat"], inputs["lon"]),
-                    year=inputs["year"],
-                    reference_period=inputs["ref_period"],
-                    metric=inputs["metric"]["name"],
-                    settings=inputs,
-                )
+                try:
+                    # Instantiate the plot object
+                    plot = MeteoHistInteractive(
+                        coords=(inputs["lat"], inputs["lon"]),
+                        year=inputs["year"],
+                        reference_period=inputs["ref_period"],
+                        metric=inputs["metric"]["name"],
+                        settings=inputs,
+                    )
+                except OpenMeteoAPIException as exc:
+                    st.error(
+                        f"There was an error retrieving the data from open-meteo.com. Error message:\n\n {exc}"
+                    )
+                    st.stop()
 
             # Save plot object and settings to session state
             st.session_state["plot"] = plot
