@@ -8,8 +8,7 @@ from copy import deepcopy
 import plotly.graph_objects as go
 import streamlit as st
 
-from meteo_hist.base import MeteoHist
-from meteo_hist.interactive import MeteoHistInteractive
+from meteo_hist import MeteoHist, MeteoHistInteractive
 
 
 def create_graph(inputs: dict, plot_placeholder) -> MeteoHist:

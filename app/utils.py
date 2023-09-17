@@ -7,7 +7,7 @@ import urllib.parse
 
 import streamlit as st
 
-from meteo_hist.base import MeteoHist
+from meteo_hist import MeteoHist
 
 
 def get_form_defaults() -> dict:

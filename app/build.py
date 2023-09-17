@@ -16,7 +16,7 @@ from streamlit_js_eval import streamlit_js_eval
 from app.forms import build_form, process_form
 from app.plot import create_graph, display_context_info
 from app.utils import get_form_defaults, get_query_params
-from meteo_hist.base import MeteoHist
+from meteo_hist import MeteoHist
 
 
 def build_menu() -> None:
