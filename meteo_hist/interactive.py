@@ -9,7 +9,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.express.colors import sample_colorscale
 
-from .base import MeteoHist
+from meteo_hist import MeteoHist
 
 
 class MeteoHistInteractive(MeteoHist):
