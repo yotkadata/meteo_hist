@@ -7,8 +7,7 @@ import time
 import streamlit as st
 from streamlit_js_eval import streamlit_js_eval
 
-from app.build import build_content, build_menu
-from app.utils import get_form_defaults
+from app import build_content, build_menu, get_form_defaults
 
 
 def main() -> None:

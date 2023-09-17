@@ -8,7 +8,7 @@ import datetime as dt
 import streamlit as st
 from pydantic.v1.utils import deep_update
 
-from app.utils import build_location_by_coords, build_location_by_name, create_share_url
+from app import build_location_by_coords, build_location_by_name, create_share_url
 
 
 def build_form(method: str = "by_name", params: dict = None) -> dict:

@@ -13,9 +13,14 @@ from pydantic.v1.utils import deep_update
 from streamlit_folium import folium_static
 from streamlit_js_eval import streamlit_js_eval
 
-from app.forms import build_form, process_form
-from app.plot import create_graph, display_context_info
-from app.utils import get_form_defaults, get_query_params
+from app import (
+    build_form,
+    create_graph,
+    display_context_info,
+    get_form_defaults,
+    get_query_params,
+    process_form,
+)
 from meteo_hist import MeteoHist
 
 
