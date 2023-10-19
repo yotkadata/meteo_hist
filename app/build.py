@@ -157,7 +157,7 @@ def build_content(plot_placeholder, message_box) -> None:
                         [input_processed["lat"], input_processed["lon"]],
                         popup=input_processed["location_name"],
                     ).add_to(folium_map)
-                    folium.TileLayer("Stamen Terrain").add_to(folium_map)
+                    folium.TileLayer("CartoDB positron").add_to(folium_map)
                     folium_static(folium_map)
 
     if st.session_state["random_graph"]:
