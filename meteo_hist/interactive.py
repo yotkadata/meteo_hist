@@ -55,43 +55,33 @@ class MeteoHistInteractive(MeteoHist):
         # Create array of white colors with same shape as diff
         colors = np.full_like(diff, "rgb(255, 255, 255)", dtype="object")
 
-        if len(diff[mask_above]) > 0:
-            # Calculate min and max
-            max_above = np.nanmax(diff[mask_above])
-            min_above = np.nanmin(diff[mask_above])
+        def normalize_and_get_colors(diff, diff_norm, mask, colormap):
+            """
+            Normalize values and map to a colormap.
+            """
+            if len(diff[mask]) == 0:
+                return None
 
-            if len(diff[mask_above]) == 1:
+            if len(diff[mask]) == 1:
                 # Only one value, assign it a default value of 1
-                diff_norm[mask_above] = np.array([1])
+                diff_norm[mask] = np.array([1])
             else:
                 # Normalize to 0-1
-                diff_norm[mask_above] = (diff[mask_above] - min_above) / (
-                    max_above - min_above
-                )
+                max_val = np.nanmax(diff[mask])
+                min_val = np.nanmin(diff[mask])
+                diff_norm[mask] = (diff[mask] - min_val) / (max_val - min_val)
 
-            # Sample colors from colormaps, using normalized values
-            colors[mask_above] = sample_colorscale(
-                self.settings["metric"]["colors"]["cmap_above"], diff_norm[mask_above]
+            return sample_colorscale(
+                self.settings["metric"]["colors"][colormap], diff_norm[mask]
             )
 
-        if len(diff[mask_below]) > 0:
-            # Calculate min and max
-            max_below = np.nanmax(diff[mask_below])
-            min_below = np.nanmin(diff[mask_below])
-
-            if len(diff[mask_below]) == 1:
-                # Only one value, assign it a default value of 1
-                diff_norm[mask_below] = np.array([1])
-            else:
-                # Normalize to 0-1
-                diff_norm[mask_below] = (diff[mask_below] - min_below) / (
-                    max_below - min_below
-                )
-
-            # Sample colors from colormaps, using normalized values
-            colors[mask_below] = sample_colorscale(
-                self.settings["metric"]["colors"]["cmap_below"], diff_norm[mask_below]
-            )
+        # Apply normalization and get colors for above and below mean
+        colors[mask_above] = normalize_and_get_colors(
+            diff, diff_norm, mask_above, "cmap_above"
+        )
+        colors[mask_below] = normalize_and_get_colors(
+            diff, diff_norm, mask_below, "cmap_below"
+        )
 
         return colors
 
