@@ -726,7 +726,7 @@ class MeteoHist:
         return None
 
     @staticmethod
-    def get_lat_lon(query: str, lang: str = "en") -> dict:
+    def get_lat_lon(query: str, lang: str = "en") -> list[dict]:
         """
         Get latitude and longitude from a query string.
 
@@ -738,15 +738,28 @@ class MeteoHist:
             Language to get the location name in.
         """
 
-        url = (
-            "https://nominatim.openstreetmap.org/search?"
-            f"q={query}&format=json&addressdetails=1&"
-            f"accept-language={lang}"
-        )
+        # Define the request URL with parameters
+        url = "https://nominatim.openstreetmap.org/search"
+        params = {
+            "q": query,
+            "format": "json",
+            "addressdetails": 1,
+            "accept-language": lang,
+            "limit": 5,
+        }
+        headers = {"User-Agent": "MeteoHist"}
 
-        # Get the data from the API
-        location = requests.get(url, timeout=30)
-        location = location.json()
+        try:
+            response = requests.get(url, params=params, headers=headers, timeout=30)
+            # Check if the response was successful
+            response.raise_for_status()
+            location = response.json()
+        except requests.RequestException as e:
+            print(f"Request failed: {e}")
+            return []
+        except ValueError:
+            print("Invalid response format.")
+            return []
 
         keys = [
             "city",
