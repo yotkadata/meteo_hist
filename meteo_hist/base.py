@@ -36,14 +36,19 @@ class MeteoHist:
         """
         Parameters
         ----------
-        df_t : pd.DataFrame
-            Dataframe with metric data.
-        year : int
+        coords: tuple of floats
+            Latitude and longitude of the location.
+        year: int
             Year to plot.
-        reference_period : tuple of ints
-            Reference period to compare the data, by default (1991, 2020).
-        settings : dict, optional
+        reference_period: tuple of ints
+            Reference period to compare the data, by default (1961, 1990).
+        metric: str
+            Metric to plot. Allowed values: temperature_mean (default), temperature_min,
+            temperature_max, precipitation_rolling, precipitation_cum.
+        settings: dict, optional
             Settings dictionary, by default None.
+        data: pd.DataFrame, optional
+            Dataframe with metric data, by default None.
         """
         self.coords = (round(coords[0], 6), round(coords[1], 6))
         self.metric = metric
@@ -166,7 +171,20 @@ class MeteoHist:
     ) -> pd.DataFrame:
         """
         Get data from the OpenMeteo API and return it as a DataFrame.
+
+        Parameters
+        ----------
+        coords: tuple of floats
+            Latitude and longitude of the location.
+        metric: str
+            Metric to plot. Allowed values: temperature_mean (default), temperature_min,
+            temperature_max, precipitation_rolling, precipitation_cum.
+        system: str
+            System to get units for. Possible values: metric, imperial.
+        years: tuple of ints
+            First and last year to get data for, by default (1940, dt.datetime.now().year).
         """
+
         # Set defaults
         coords = self.coords if coords is None else coords
         metric = self.settings["metric"]["name"] if metric is None else metric
@@ -269,6 +287,15 @@ class MeteoHist:
     ) -> pd.DataFrame:
         """
         Transforms the dataframe to be used for plotting.
+
+        Parameters
+        ----------
+        df_raw: pd.DataFrame
+            Raw data from the OpenMeteo API.
+        year: int
+            Year to plot.
+        ref_period: tuple of ints
+            Reference period to compare the data, by default (1961, 1990).
         """
 
         df_f = df_raw.copy()
@@ -419,6 +446,12 @@ class MeteoHist:
     def get_metric_info(self, name: str = "temperature_mean") -> dict:
         """
         Get information about a metric.
+
+        Parameters
+        ----------
+        name: str
+            Name of the metric to get information for. Allowed values: temperature_mean,
+            temperature_min, temperature_max, precipitation_rolling, precipitation_cum.
         """
 
         # Define default values by metric
@@ -522,7 +555,15 @@ class MeteoHist:
     def create_file_path(self, prefix: str = None, suffix: str = None) -> str:
         """
         Create a file path to save the plot to a file.
+
+        Parameters
+        ----------
+        prefix: str
+            Prefix to add to the file name.
+        suffix: str
+            Suffix to add to the file name.
         """
+
         # Make sure the output directory exists
         Path(self.settings["paths"]["output"]).mkdir(parents=True, exist_ok=True)
 
@@ -564,6 +605,11 @@ class MeteoHist:
     def clean_output_dir(self, num_files_to_keep: int = None) -> None:
         """
         Remove old files from the output directory.
+
+        Parameters
+        ----------
+        num_files_to_keep: int
+            Number of files to keep in the output directory.
         """
         # If no number of files to keep is specified, use the default value
         if num_files_to_keep is None:
@@ -586,6 +632,11 @@ class MeteoHist:
     def show_random(file_dir: str = None) -> str:
         """
         Show a random plot.
+
+        Parameters
+        ----------
+        file_dir: str
+            Directory to search for files, by default None.
         """
 
         # Specify directory paths
@@ -612,7 +663,15 @@ class MeteoHist:
     def get_location(coords: tuple[float, float], lang: str = "en") -> str:
         """
         Get location name from latitude and longitude.
+
+        Parameters
+        ----------
+        coords: tuple of floats
+            Latitude and longitude of the location.
+        lang: str
+            Language to get the location name in.
         """
+
         lat, lon = coords
 
         url = (
@@ -670,7 +729,15 @@ class MeteoHist:
     def get_lat_lon(query: str, lang: str = "en") -> dict:
         """
         Get latitude and longitude from a query string.
+
+        Parameters
+        ----------
+        query: str
+            Query string to search for.
+        lang: str
+            Language to get the location name in.
         """
+
         url = (
             "https://nominatim.openstreetmap.org/search?"
             f"q={query}&format=json&addressdetails=1&"
