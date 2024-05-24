@@ -28,6 +28,25 @@ class MeteoHistInteractive(MeteoHist):
         data: pd.DataFrame = None,
         layout_options: dict = None,
     ):
+        """
+        Parameters
+        ----------
+        coords: tuple of floats
+            Latitude and longitude of the location.
+        year: int
+            Year to plot.
+        reference_period: tuple of ints
+            Reference period to compare the data, by default (1961, 1990).
+        metric: str
+            Metric to plot. Allowed values: temperature_mean (default), temperature_min,
+            temperature_max, precipitation_rolling, precipitation_cum.
+        settings: dict, optional
+            Settings dictionary, by default None.
+        data: pd.DataFrame, optional
+            Dataframe with metric data, by default None.
+        layout_options: dict, optional
+            Dictionary with layout options for the plot, by default None.
+        """
         # Call the base class constructor using super()
         super().__init__(coords, year, reference_period, metric, settings, data)
         self.layout_options = layout_options
@@ -55,9 +74,22 @@ class MeteoHistInteractive(MeteoHist):
         # Create array of white colors with same shape as diff
         colors = np.full_like(diff, "rgb(255, 255, 255)", dtype="object")
 
-        def normalize_and_get_colors(diff, diff_norm, mask, colormap):
+        def normalize_and_get_colors(
+            diff: np.ndarray, diff_norm: np.ndarray, mask: np.ndarray, colormap: str
+        ) -> np.ndarray:
             """
             Normalize values and map to a colormap.
+
+            Parameters
+            ----------
+            diff: np.ndarray
+                Array with difference values.
+            diff_norm: np.ndarray
+                Array with normalized difference values.
+            mask: np.ndarray
+                Mask to apply to the arrays.
+            colormap: str
+                Name of the colormap to use.
             """
             if len(diff[mask]) == 0:
                 return None
@@ -106,6 +138,11 @@ class MeteoHistInteractive(MeteoHist):
     def add_alternating_bg(self, fig: go.Figure) -> go.Figure:
         """
         Add alternating background color for months.
+
+        Parameters
+        ----------
+        fig: go.Figure
+            Plotly figure object.
         """
 
         # Define dict with first and last day of each month, ignoring leap days
@@ -154,6 +191,11 @@ class MeteoHistInteractive(MeteoHist):
     def plot_percentile_area(self, fig: go.Figure) -> go.Figure:
         """
         Add filled area between p05 and p95 to plot.
+
+        Parameters
+        ----------
+        fig: go.Figure
+            Plotly figure object.
         """
 
         fig.add_traces(
@@ -188,6 +230,11 @@ class MeteoHistInteractive(MeteoHist):
     def plot_percentile_lines(self, fig: go.Figure) -> go.Figure:
         """
         Add percentile lines to plot.
+
+        Parameters
+        ----------
+        fig: go.Figure
+            Plotly figure object.
         """
 
         fig.add_traces(
@@ -228,6 +275,11 @@ class MeteoHistInteractive(MeteoHist):
     def plot_mean(self, fig: go.Figure) -> go.Figure:
         """
         Plot the the long-term mean.
+
+        Parameters
+        ----------
+        fig: go.Figure
+            Plotly figure object.
         """
 
         fig.add_trace(
@@ -251,6 +303,13 @@ class MeteoHistInteractive(MeteoHist):
     def plot_diff(self, fig: go.Figure, chart_type: str = "area") -> go.Figure:
         """
         Plot the difference between the year's value and the long-term mean.
+
+        Parameters
+        ----------
+        fig: go.Figure
+            Plotly figure object.
+        chart_type: str
+            Type of chart to display, either "area" or "bar".
         """
 
         opacity = self.get_opacity()
@@ -322,6 +381,13 @@ class MeteoHistInteractive(MeteoHist):
     def annotate_peaks(self, fig: go.Figure, how: str = "max") -> go.Figure:
         """
         Annotate maximum or minimum values.
+
+        Parameters
+        ----------
+        fig: go.Figure
+            Plotly figure object.
+        how: str
+            Annotation type, either "max" or "min".
         """
         if how not in ["max", "min"]:
             return fig
@@ -409,6 +475,11 @@ class MeteoHistInteractive(MeteoHist):
     def add_annotations(self, fig: go.Figure) -> go.Figure:
         """
         Add annotations to the plot to explain the data.
+
+        Parameters
+        ----------
+        fig: go.Figure
+            Plotly figure object.
         """
         y_min, y_max = self.get_y_limits()
 
@@ -543,6 +614,11 @@ class MeteoHistInteractive(MeteoHist):
     def add_data_source(self, fig: go.Figure) -> go.Figure:
         """
         Add data source to the plot.
+
+        Parameters
+        ----------
+        fig: go.Figure
+            Plotly figure object.
         """
         fig.add_annotation(
             xref="paper",
@@ -564,6 +640,11 @@ class MeteoHistInteractive(MeteoHist):
     def add_data_info(self, fig: go.Figure) -> go.Figure:
         """
         Add coordinates and last avalable date to the plot.
+
+        Parameters
+        ----------
+        fig: go.Figure
+            Plotly figure object.
         """
         if self.coords[0] is None or self.coords[1] is None:
             return fig
@@ -592,6 +673,11 @@ class MeteoHistInteractive(MeteoHist):
     def layout(self, fig: go.Figure) -> go.Figure:
         """
         Update layout options.
+
+        Parameters
+        ----------
+        fig: go.Figure
+            Plotly figure object.
         """
 
         fig.update_layout(
