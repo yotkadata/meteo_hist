@@ -3,19 +3,28 @@ Functions to create the plot.
 """
 
 import datetime as dt
+import logging
 import os
 import string
 from calendar import isleap
 from pathlib import Path
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
 import requests
+from geopy.exc import GeocoderServiceError, GeocoderTimedOut
+from geopy.geocoders import Nominatim
 from pydantic.v1.utils import deep_update
 from statsmodels.nonparametric.smoothers_lowess import lowess
+from tenacity import retry, stop_after_attempt, wait_fixed
 from unidecode import unidecode
 
-from meteo_hist import OpenMeteoAPIException
+from meteo_hist import APICallFailed, OpenMeteoAPIException
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class MeteoHist:
@@ -237,7 +246,8 @@ class MeteoHist:
                 raise OpenMeteoAPIException(
                     (
                         "Failed retrieving data from open-meteo.com. \n"
-                        f"Server returned HTTP code: {data.status_code}{reason} on following URL: \n"
+                        f"Server returned HTTP code: {data.status_code}{reason} "
+                        "on following URL: \n"
                         f"{data.url}"
                     )
                 )
@@ -249,13 +259,14 @@ class MeteoHist:
             if not "daily" in data.json():
                 raise OpenMeteoAPIException(
                     (
-                        "Error receiving data from open-meteo.com: Response does not contain 'daily'."
+                        "Error receiving data from open-meteo.com: "
+                        "Response does not contain 'daily'."
                         f"URL: {data.url}"
                     )
                 )
 
         except requests.ConnectionError as exc:
-            raise (exc)
+            raise exc
 
         # Create new Dataframe from column "daily"
         df_raw = pd.DataFrame(
@@ -726,106 +737,108 @@ class MeteoHist:
         return None
 
     @staticmethod
-    def get_location(coords: tuple[float, float], lang: str = "en") -> str:
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
+    def get_location(coords: Tuple[float, float], lang: str = "en") -> Optional[str]:
         """
         Get location name from latitude and longitude.
 
         Parameters
         ----------
-        coords: tuple of floats
+        coords : Tuple[float, float]
             Latitude and longitude of the location.
-        lang: str
-            Language to get the location name in.
+        lang : str, optional
+            Language to get the location name in (default is "en").
+
+        Returns
+        -------
+        Optional[str]
+            Location name derived from the coordinates, or None if not found.
+
+        Raises
+        ------
+        APICallFailed
+            If the geolocation API call fails.
         """
-
-        lat, lon = coords
-
-        url = (
-            "https://nominatim.openstreetmap.org/reverse?"
-            f"lat={lat}&lon={lon}&format=json&accept-language={lang}&zoom=18"
-        )
-
-        try:
-            # Get the data from the API
-            location = requests.get(url, timeout=30)
-
-        # Raise an error if the status code is not 200
-        except requests.exceptions.RequestException as excpt:
-            raise SystemExit(excpt) from excpt
-
-        # Convert the response to JSON
-        location = location.json()
-
-        # Check if an error was returned
-        if "error" in location:
+        if not (-90 <= coords[0] <= 90 and -180 <= coords[1] <= 180):
+            logging.error("Invalid latitude or longitude.")
             return None
 
-        # Get the location name
-        if "address" in location:
-            # Set default in case no location name is found
-            location_name = location["display_name"]
+        geolocator = Nominatim(user_agent="MeteoHist")
+        lat, lon = coords
 
-            # Keys to look for in the address dictionary
-            keys = [
-                "city",
-                "town",
-                "village",
-                "hamlet",
-                "suburb",
-                "municipality",
-                "district",
-                "county",
-                "state",
-            ]
-            for key in keys:
-                # If the key is in the address dictionary, use it and stop
-                if key in location["address"]:
-                    location_name = f"{location['address'][key]}"
-                    break
+        try:
+            location = geolocator.reverse((lat, lon), language=lang, zoom=18)
+        except (GeocoderTimedOut, GeocoderServiceError) as e:
+            logging.error("Geolocation request failed: %s", e)
+            raise APICallFailed(e) from e
 
-            # Add the country name if it is in the address dictionary
-            if "country" in location["address"]:
-                location_name += f", {location['address']['country']}"
+        if location is None or not location.raw:
+            logging.info("No location data found for the given coordinates.")
+            return None
 
-            return location_name
+        location_data = location.raw
+        if "error" in location_data:
+            logging.info("Error found in location data.")
+            return None
 
-        return None
+        address = location_data.get("address", {})
+        location_name = location_data.get("display_name", "")
+
+        keys = [
+            "city",
+            "town",
+            "village",
+            "hamlet",
+            "suburb",
+            "municipality",
+            "district",
+            "county",
+            "state",
+        ]
+        for key in keys:
+            if key in address:
+                location_name = f"{address[key]}"
+                break
+
+        if "country" in address:
+            location_name += f", {address['country']}"
+
+        return location_name
 
     @staticmethod
-    def get_lat_lon(query: str, lang: str = "en") -> list[dict]:
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
+    def get_lat_lon(query: str, lang: str = "en") -> List[Dict[str, Union[str, float]]]:
         """
         Get latitude and longitude from a query string.
 
         Parameters
         ----------
-        query: str
+        query : str
             Query string to search for.
-        lang: str
-            Language to get the location name in.
+        lang : str, optional
+            Language to get the location name in (default is "en").
+
+        Returns
+        -------
+        List[Dict[str, Union[str, float]]]
+            A list of dictionaries with the following keys:
+            - display_name: str
+            - location_name: str
+            - lat: float
+            - lon: float
+
+        Example
+        -------
+        [{'display_name': 'New York, USA',
+        'location_name': 'New York, United States',
+        'lat': 40.7127753,
+        'lon': -74.0059728}]
         """
-
-        # Define the request URL with parameters
-        url = "https://nominatim.openstreetmap.org/search"
-        params = {
-            "q": query,
-            "format": "json",
-            "addressdetails": 1,
-            "accept-language": lang,
-            "limit": 5,
-        }
-        headers = {"User-Agent": "MeteoHist"}
-
-        try:
-            response = requests.get(url, params=params, headers=headers, timeout=30)
-            # Check if the response was successful
-            response.raise_for_status()
-            location = response.json()
-        except requests.RequestException as e:
-            print(f"Request failed: {e}")
+        if not query.strip():
+            logging.error("Query string is empty.")
             return []
-        except ValueError:
-            print("Invalid response format.")
-            return []
+
+        geolocator = Nominatim(user_agent="MeteoHist")
 
         keys = [
             "city",
@@ -841,19 +854,35 @@ class MeteoHist:
 
         types = ["city", "administrative", "town", "village"]
 
+        try:
+            locations = geolocator.geocode(
+                query, exactly_one=False, language=lang, addressdetails=True
+            )
+        except (GeocoderTimedOut, GeocoderServiceError) as e:
+            logging.error("Geocoding request failed: %s", e)
+            return []
+
+        if not locations:
+            logging.info("No locations found for the query.")
+            return []
+
         result = []
 
-        for key in keys:
-            for loc in location:
-                if loc["type"] in types and key in loc["address"]:
-                    result.append(
-                        {
-                            "display_name": loc["display_name"],
-                            "location_name": f"{loc['address'][key]}, {loc['address']['country']}",
-                            "lat": float(loc["lat"]),
-                            "lon": float(loc["lon"]),
-                        }
-                    )
-                    break
+        for loc in locations:
+            if loc.raw.get("type") in types:
+                address = loc.raw.get("address", {})
+                for key in keys:
+                    if key in address:
+                        result.append(
+                            {
+                                "display_name": loc.raw.get("display_name", ""),
+                                "location_name": (
+                                    f"{address.get(key, '')}, {address.get('country', '')}"
+                                ),
+                                "lat": loc.latitude,
+                                "lon": loc.longitude,
+                            }
+                        )
+                        break  # Exit the inner loop if a valid location is found
 
         return result
