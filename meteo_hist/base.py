@@ -17,9 +17,14 @@ from geopy.exc import GeocoderServiceError, GeocoderTimedOut
 from geopy.geocoders import Nominatim
 from pydantic.v1.utils import deep_update
 from statsmodels.nonparametric.smoothers_lowess import lowess
+from tenacity import retry, stop_after_attempt, wait_fixed
 from unidecode import unidecode
 
 from meteo_hist import APICallFailed, OpenMeteoAPIException
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class MeteoHist:
@@ -666,6 +671,7 @@ class MeteoHist:
         return None
 
     @staticmethod
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
     def get_location(coords: Tuple[float, float], lang: str = "en") -> Optional[str]:
         """
         Get location name from latitude and longitude.
@@ -734,6 +740,7 @@ class MeteoHist:
         return location_name
 
     @staticmethod
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
     def get_lat_lon(query: str, lang: str = "en") -> List[Dict[str, Union[str, float]]]:
         """
         Get latitude and longitude from a query string.
