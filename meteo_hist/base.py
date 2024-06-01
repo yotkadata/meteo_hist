@@ -1,5 +1,5 @@
 """
-Functions to create the plot.
+Base class to prepare data and provide methods to create a plot
 """
 
 import datetime as dt
@@ -8,7 +8,7 @@ import os
 import string
 from calendar import isleap
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -35,13 +35,13 @@ class MeteoHist:
 
     def __init__(
         self,
-        coords: tuple[float, float],
-        year: int = None,
-        reference_period: tuple[int, int] = (1961, 1990),
+        coords: Tuple[float, float],
+        year: Optional[int] = None,
+        reference_period: Tuple[int, int] = (1961, 1990),
         metric: str = "temperature_mean",
-        settings: dict = None,
-        data: pd.DataFrame = None,
-    ):
+        settings: Optional[Dict[str, Any]] = None,
+        data: Optional[pd.DataFrame] = None,
+    ) -> None:
         """
         Parameters
         ----------
@@ -59,15 +59,19 @@ class MeteoHist:
         data: pd.DataFrame, optional
             Dataframe with metric data, by default None.
         """
-        self.coords = (round(coords[0], 6), round(coords[1], 6))
-        self.metric = metric
-        self.settings = None
+        self.coords: Tuple[float, float] = (round(coords[0], 6), round(coords[1], 6))
+        self.metric: str = metric
+        self.settings: Optional[Dict[str, Any]] = None
         self.update_settings(settings)
-        self.year = year if year is not None else dt.datetime.now().year
-        self.data_raw = data if data is not None else self.get_data(coords)
-        self.data = self.transform_data(self.data_raw, self.year, reference_period)
-        self.reference_period = reference_period
-        self.ref_nans = 0
+        self.year: int = year if year is not None else dt.datetime.now().year
+        self.data_raw: pd.DataFrame = (
+            data if data is not None else self.get_data(coords)
+        )
+        self.data: pd.DataFrame = self.transform_data(
+            self.data_raw, self.year, reference_period
+        )
+        self.reference_period: Tuple[int, int] = reference_period
+        self.ref_nans: int = 0
 
     def update_settings(self, settings: dict) -> None:
         """
