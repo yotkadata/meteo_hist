@@ -316,15 +316,7 @@ class MeteoHist:
         df_f["year"] = df_f["date"].dt.year
 
         # Remove all Feb 29 rows to get rid of leap days
-        df_f = df_f[
-            ~((df_f["date"].dt.month == 2) & (df_f["date"].dt.day == 29))
-        ].copy()
-
-        # Adjust "dayofyear" values for days after February 29th in leap years
-        df_f["dayofyear"] = df_f["dayofyear"].where(
-            ~((df_f["date"].dt.month > 2) & (df_f["date"].dt.is_leap_year)),
-            df_f["dayofyear"] - 1,
-        )
+        df_f = self.remove_leap_days(df_f)
 
         # Reset index
         df_f.reset_index(drop=True, inplace=True)
@@ -399,35 +391,67 @@ class MeteoHist:
 
         return df_g
 
-    def get_stats(self, year: int = None) -> dict:
+    def get_stats_for_year(
+        self,
+        year: Optional[int] = None,
+        reference_period: Optional[Tuple[int, int]] = None,
+        reduce_days: bool = True,
+    ) -> Dict[str, int]:
         """
-        Get statistics for a given year
-        """
+        Get statistics for a given year.
 
+        Parameters
+        ----------
+        year : int, optional
+            Year to get statistics for. If None, uses the instance's year.
+        reference_period : tuple of int, optional
+            Reference period to compare the data. If None, uses the instance's reference period.
+        reduce_days : bool, default True
+            Reduce the number of days used for comparison to the number of available days in
+            the last (current) year.
+
+        Returns
+        -------
+        dict
+            Dictionary with statistics for the given year.
+        """
         if year is None:
             year = self.year
 
+        if reference_period is None:
+            reference_period = self.reference_period
+
         data = self.data.copy()
+        data_raw = self.data_raw.copy()
 
-        if year != self.year:
-            data_raw = self.data_raw[self.data_raw["date"].dt.year == year].copy()
+        if data.empty:
+            logger.warning("No data available")
+            return {}
 
-            data_raw["dayofyear"] = data_raw["date"].dt.dayofyear
+        if data_raw.empty:
+            logger.warning("No data available for raw data")
+            return {}
 
-            # Remove all Feb 29 rows to get rid of leap days
-            data_raw = data_raw[
-                ~((data_raw["date"].dt.month == 2) & (data_raw["date"].dt.day == 29))
-            ].copy()
+        # Get last date with data
+        last_date = data_raw[data_raw["value"].notna()]["date"].max()
 
-            # Adjust "dayofyear" values for days after February 29th in leap years
-            data_raw["dayofyear"] = data_raw["dayofyear"].where(
-                ~((data_raw["date"].dt.month > 2) & (data_raw["date"].dt.is_leap_year)),
-                data_raw["dayofyear"] - 1,
-            )
+        # Filter raw data for year
+        data_raw_year = data_raw[data_raw["date"].dt.year == year].copy()
+        data_raw_year["dayofyear"] = data_raw_year["date"].dt.dayofyear
 
-            data[f"{year}"] = data_raw["value"].reset_index(drop=True)
+        # Remove all Feb 29 rows to get rid of leap days for better comparison
+        data_raw_year = self.remove_leap_days(data_raw_year)
+
+        # Add year data as column to the main data
+        data[f"{year}"] = data_raw_year["value"].reset_index(drop=True)
+
+        if reduce_days:
+            data = self.reduce_data_to_last_available(data, last_date)
 
         stats = {}
+
+        # Number of days of the year
+        stats["days_total"] = data.shape[0]
 
         # Number of days above/below reference period mean
         stats["days_above_mean"] = data[data[f"{year}"] > data["mean"]].shape[0]
@@ -462,6 +486,62 @@ class MeteoHist:
         ].shape[0]
 
         return stats
+
+    def remove_leap_days(self, data: pd.DataFrame) -> pd.DataFrame:
+        """
+        Remove leap days (Feb 29) from the data.
+
+        Parameters
+        ----------
+        data : pd.DataFrame
+            DataFrame with date and (optional) dayofyear columns.
+
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame without leap days.
+        """
+        data = data[
+            ~((data["date"].dt.month == 2) & (data["date"].dt.day == 29))
+        ].copy()
+
+        # Check if dataframe has a dayofyear column, if yes, adjust it
+        if "dayofyear" in data.columns:
+            data["dayofyear"] = data["dayofyear"].where(
+                ~((data["date"].dt.month > 2) & (data["date"].dt.is_leap_year)),
+                data["dayofyear"] - 1,
+            )
+
+        return data
+
+    def reduce_data_to_last_available(
+        self, data: pd.DataFrame, last_date: dt.datetime
+    ) -> pd.DataFrame:
+        """
+        Reduce data to the last available date.
+
+        Parameters
+        ----------
+        data : pd.DataFrame
+            DataFrame with date column.
+        last_date : datetime
+            Last available date with data.
+
+        Returns
+        -------
+        pd.DataFrame
+            Reduced DataFrame.
+        """
+        data = data[
+            ~(
+                (data["date"].dt.month > last_date.month)
+                | (
+                    (data["date"].dt.month == last_date.month)
+                    & (data["date"].dt.day > last_date.day)
+                )
+            )
+        ]
+        return data
 
     def get_y_limits(self) -> tuple[int, int]:
         """
