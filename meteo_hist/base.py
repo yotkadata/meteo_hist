@@ -396,7 +396,8 @@ class MeteoHist:
         year: Optional[int] = None,
         reference_period: Optional[Tuple[int, int]] = None,
         reduce_days: bool = True,
-    ) -> Dict[str, int]:
+        output: str = "abs",
+    ) -> Dict[str, Union[int, float]]:
         """
         Get statistics for a given year.
 
@@ -409,6 +410,8 @@ class MeteoHist:
         reduce_days : bool, default True
             Reduce the number of days used for comparison to the number of available days in
             the last (current) year.
+        output : str, default "abs"
+            Output format for the statistics: "abs" for absolute values, "pct" for percentages.
 
         Returns
         -------
@@ -484,6 +487,12 @@ class MeteoHist:
         stats["days_between_p40_p05"] = data[
             (data[f"{year}"] < data["p40"]) & (data[f"{year}"] >= data["p05"])
         ].shape[0]
+
+        # Convert to percentage if output is "pct"
+        if output == "pct":
+            for key in stats:
+                if key != "days_total":
+                    stats[key] = round(stats[key] / stats["days_total"] * 100, 4)
 
         return stats
 
