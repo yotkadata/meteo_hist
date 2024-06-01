@@ -1,12 +1,13 @@
 """
 Unit tests (pytest) for the MeteoHist class.
 """
+
 import datetime as dt
 
 import pandas as pd
 import pytest
 
-from meteo_hist.base import MeteoHist, get_data
+from meteo_hist.base import MeteoHist
 
 
 @pytest.fixture(name="meteohist_instance_default")
@@ -14,10 +15,9 @@ def fixture_meteohist_instance_default():
     """
     Fixture to create an instance of MeteoHist for testing.
     """
-    lat, lon = 52.5170365, 13.3888599  # Berlin coordinates
-    data = get_data(lat, lon)
+    coords = (52.5170365, 13.3888599)  # Berlin coordinates
 
-    return MeteoHist(data)
+    return MeteoHist(coords)
 
 
 def test_year_attr(meteohist_instance_default):
@@ -76,9 +76,9 @@ def test_transform_df_dates(meteohist_instance_default):
     Test the if MeteoHist with default parameters correctly transforms dates.
     """
 
-    assert isinstance(meteohist_instance_default.df_t, pd.DataFrame), (
-        "df_t attribute should be a Pandas DataFrame, "
-        f"{type(meteohist_instance_default.df_t)} found."
+    assert isinstance(meteohist_instance_default.data, pd.DataFrame), (
+        "data attribute should be a Pandas DataFrame, "
+        f"{type(meteohist_instance_default.data)} found."
     )
 
 
@@ -86,14 +86,15 @@ def test_transform_df_values():
     """
     Test the if MeteoHist correctly keeps values in line.
     """
-    lat, lon = 52.5170365, 13.3888599
+
+    coords = (52.5170365, 13.3888599)  # Berlin coordinates
+    instance = MeteoHist(coords, year=2020)
 
     # Get raw data
-    df_raw = get_data(lat, lon)
+    df_raw = instance.data_raw
 
-    # Transform data
-    data_transformed = MeteoHist(df_raw, year=2020)
-    df_t = data_transformed.data
+    # Transformed data
+    df_t = instance.data
 
     # Pick some dates
     dates = ["2020-02-28", "2020-01-01", "2020-07-06", "2020-09-16", "2020-12-31"]
