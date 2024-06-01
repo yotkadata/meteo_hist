@@ -165,11 +165,16 @@ class MeteoHist:
         ----------
         year : int
             The year of the date.
-        day_of_year : int
+        dayofyear : int
             The day of the year.
         adj_leap : bool, optional
             Adjust for leap years if years were reduced to 365 days
             by default False
+
+        Returns
+        -------
+        datetime
+            The corresponding date.
         """
         # Check if year is a leap year, adjust day after Feb 28 if so
         if adj_leap and isleap(year) and dayofyear > (31 + 28):
