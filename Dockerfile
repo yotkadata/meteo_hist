@@ -7,6 +7,7 @@ RUN apt-get update && \
     apt-get install -y \
     wget \
     unzip \
+    curl \
     fontconfig && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
@@ -15,6 +16,13 @@ RUN apt-get update && \
 RUN mkdir -p /usr/share/fonts/truetype/lato && \
     wget -O /tmp/Lato.zip "https://fonts.google.com/download?family=Lato" && \
     unzip /tmp/Lato.zip -d /usr/share/fonts/truetype/lato && \
+    fc-cache -f -v
+
+RUN mkdir -p /usr/share/fonts/truetype/lato && \
+    curl -L -o /usr/share/fonts/truetype/lato/Lato-Bold.ttf "https://github.com/google/fonts/raw/main/ofl/lato/Lato-Bold.ttf" && \
+    curl -L -o /usr/share/fonts/truetype/lato/Lato-BoldItalic.ttf "https://github.com/google/fonts/raw/main/ofl/lato/Lato-BoldItalic.ttf" && \
+    curl -L -o /usr/share/fonts/truetype/lato/Lato-Italic.ttf "https://github.com/google/fonts/raw/main/ofl/lato/Lato-Italic.ttf" && \
+    curl -L -o /usr/share/fonts/truetype/lato/Lato-Regular.ttf "https://github.com/google/fonts/raw/main/ofl/lato/Lato-Regular.ttf" && \
     fc-cache -f -v
 
 # Install Python dependencies
