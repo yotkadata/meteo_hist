@@ -187,25 +187,30 @@ class MeteoHist:
 
     def get_data(
         self,
-        coords: tuple[float, float] = None,
-        metric: str = None,
-        system: str = None,
-        years: tuple[int, int] = None,
+        coords: Optional[Tuple[float, float]] = None,
+        metric: Optional[str] = None,
+        system: Optional[str] = None,
+        years: Optional[Tuple[int, int]] = None,
     ) -> pd.DataFrame:
         """
         Get data from the OpenMeteo API and return it as a DataFrame.
 
         Parameters
         ----------
-        coords: tuple of floats
+        coords: tuple of floats, optional
             Latitude and longitude of the location.
-        metric: str
+        metric: str, optional
             Metric to plot. Allowed values: temperature_mean (default), temperature_min,
             temperature_max, precipitation_rolling, precipitation_cum.
-        system: str
+        system: str, optional
             System to get units for. Possible values: metric, imperial.
-        years: tuple of ints
+        years: tuple of ints, optional
             First and last year to get data for, by default (1940, dt.datetime.now().year).
+
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame with the requested data.
         """
 
         # Set defaults
@@ -308,7 +313,7 @@ class MeteoHist:
         return df_raw
 
     def transform_data(
-        self, df_raw: pd.DataFrame, year: int, ref_period: tuple[int, int]
+        self, df_raw: pd.DataFrame, year: int, ref_period: Tuple[int, int]
     ) -> pd.DataFrame:
         """
         Transforms the dataframe to be used for plotting.
@@ -321,6 +326,11 @@ class MeteoHist:
             Year to plot.
         ref_period: tuple of ints
             Reference period to compare the data, by default (1961, 1990).
+
+        Returns
+        -------
+        pd.DataFrame
+            Transformed DataFrame.
         """
 
         df_f = df_raw.copy()
@@ -465,7 +475,7 @@ class MeteoHist:
         if reduce_days:
             data = self.reduce_data_to_last_available(data, last_date)
 
-        stats = {}
+        stats: Dict[str, Union[int, float]] = {}
 
         # Number of days of the year
         stats["days_total"] = data.shape[0]
