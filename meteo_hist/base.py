@@ -73,11 +73,16 @@ class MeteoHist:
         self.reference_period: Tuple[int, int] = reference_period
         self.ref_nans: int = 0
 
-    def update_settings(self, settings: dict) -> None:
+    def update_settings(self, settings: Optional[Dict[str, Any]]) -> None:
         """
         Update the settings dictionary.
+
+        Parameters
+        ----------
+        settings: dict, optional
+            Settings dictionary to update the current settings.
         """
-        default_settings = {
+        default_settings: Dict[str, Any] = {
             "font": {
                 "family": "sans-serif",
                 "font": "Lato",
@@ -129,7 +134,7 @@ class MeteoHist:
             settings["location_name"] = self.get_location(self.coords)
 
         # Copy old settings to compare later
-        old_settings = self.settings
+        old_settings: Optional[Dict[str, Any]] = self.settings
 
         # Save new settings
         self.settings = settings
@@ -137,8 +142,8 @@ class MeteoHist:
         # Where necessary, download and/or transformf the data again to reflect settings changes
         if isinstance(old_settings, dict):
             # Changes that require downloading/transforming the data again
-            download_keys = ["system"]
-            transform_keys = ["system", "smooth"]
+            download_keys: List[str] = ["system"]
+            transform_keys: List[str] = ["system", "smooth"]
 
             # Check if any values for keys in download_keys are different
             if any(settings[key] != old_settings[key] for key in download_keys):
