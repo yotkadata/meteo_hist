@@ -496,6 +496,70 @@ class MeteoHist:
 
         return stats
 
+    def get_stats_for_period(
+        self,
+        period: Tuple[int, int] = None,
+        reference_period: Optional[Tuple[int, int]] = None,
+        reduce_days: bool = True,
+        output: str = "abs",
+    ) -> pd.DataFrame:
+        """
+        Get statistics for a given period.
+
+        Parameters
+        ----------
+        period : tuple of ints, optional
+            First and last year of the period. If None, uses the min and max years of self.data_raw.
+        reference_period : tuple of ints, optional
+            Reference period to compare the data. If None, uses the instance's reference period.
+        reduce_days : bool, default True
+            Reduce the number of days used for comparison to the number of available days in
+            the last (current) year.
+        output : str, default "abs"
+            Output format for the statistics: "abs" for absolute values, "pct" for percentages.
+
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame with statistics for the given period.
+        """
+        # Use the instance's min and max years of self.data_raw in case period is not provided
+        if period is None:
+            period = (
+                self.data_raw["date"].dt.year.min(),
+                self.data_raw["date"].dt.year.max(),
+            )
+
+        if reference_period is None:
+            reference_period = self.reference_period
+
+        columns: List[str] = [
+            "days_total",
+            "days_above_mean",
+            "days_below_mean",
+            "days_above_p95",
+            "days_below_p05",
+            "days_between_mean_p95",
+            "days_between_mean_p05",
+            "days_between_mean_p60",
+            "days_between_mean_p40",
+            "days_between_p60_p95",
+            "days_between_p40_p05",
+        ]
+
+        # Collect statistics for each year in the period
+        stats_list = [
+            self.get_stats_for_year(year, reference_period, reduce_days, output)
+            for year in range(period[0], period[1] + 1)
+        ]
+
+        # Create DataFrame from the collected statistics
+        df_stats = pd.DataFrame(
+            stats_list, index=range(period[0], period[1] + 1), columns=columns
+        )
+
+        return df_stats
+
     def remove_leap_days(self, data: pd.DataFrame) -> pd.DataFrame:
         """
         Remove leap days (Feb 29) from the data.
