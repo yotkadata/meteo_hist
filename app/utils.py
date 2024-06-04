@@ -57,7 +57,7 @@ def get_query_params() -> dict:
     Get query parameters from URL.
     """
 
-    query = st.experimental_get_query_params()
+    query = st.query_params
 
     allowed_params = [
         "lat",
@@ -87,9 +87,9 @@ def get_query_params() -> dict:
 
     for key, value in params.items():
         # Check keys with float values
-        if key in ["lat", "lon"] and isinstance(value, list):
+        if key in ["lat", "lon"] and isinstance(value, str):
             try:
-                params[key] = float(value[0])
+                params[key] = float(value)
                 if key == "lat" and (params[key] < -90 or params[key] > 90):
                     remove_keys.append(key)
                 if key == "lon" and (params[key] < -180 or params[key] > 180):
@@ -99,10 +99,10 @@ def get_query_params() -> dict:
 
         # Check keys with int values
         elif key in ["year", "highlight_max", "highlight_min", "smooth"] and isinstance(
-            value, list
+            value, str
         ):
             try:
-                params[key] = int(value[0])
+                params[key] = int(value)
                 if key == "year" and (
                     params[key] < 1940 or params[key] > dt.datetime.now().year
                 ):
@@ -118,7 +118,7 @@ def get_query_params() -> dict:
                 remove_keys.append(key)
 
         # Check ref_period
-        elif key == "ref_period" and isinstance(value, list):
+        elif key == "ref_period" and isinstance(value, str):
             params[key] = (
                 int("".join(value).split("-", maxsplit=1)[0]),
                 int("".join(value).split("-", maxsplit=1)[1]),
@@ -130,28 +130,26 @@ def get_query_params() -> dict:
                 remove_keys.append(key)
 
         # Check boolean values
-        elif key in ["peak_alpha", "alternate_months"] and isinstance(value, list):
-            params[key] = " ".join(value).split("-", maxsplit=1)[0] != "false"
+        elif key in ["peak_alpha", "alternate_months"] and isinstance(value, str):
+            params[key] = value != "false"
 
         # Check unit system
-        elif key == "system":
-            params[key] = " ".join(value)
-            if params[key] != "imperial":
-                remove_keys.append(key)
+        elif key == "system" and isinstance(value, str) and value != "imperial":
+            remove_keys.append(key)
 
         # Check metric
-        elif key == "metric":
-            params[key] = " ".join(value)
-            if params[key] not in [
+        elif (
+            key == "metric"
+            and isinstance(value, str)
+            and value
+            not in [
                 "temperature_min",
                 "temperature_max",
                 "precipitation_rolling",
                 "precipitation_cum",
-            ]:
-                remove_keys.append(key)
-
-        else:
-            params[key] = " ".join(value)
+            ]
+        ):
+            remove_keys.append(key)
 
     # Remove invalid keys
     params = {key: value for key, value in params.items() if key not in remove_keys}

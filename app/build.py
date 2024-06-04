@@ -33,7 +33,6 @@ def build_menu() -> None:
     query_params = get_query_params()
 
     if len(query_params) > 0:
-        # st.experimental_set_query_params()
         st.session_state["form_defaults"] = deep_update(
             st.session_state["form_defaults"], query_params
         )
@@ -65,7 +64,7 @@ def build_menu() -> None:
         # Reset form defaults once method is changed
         st.session_state["form_defaults"] = get_form_defaults()
         # Remove all query parameters from URL
-        st.experimental_set_query_params()
+        st.query_params.clear()
 
     # Build form
     st.session_state["input_values"] = build_form(
