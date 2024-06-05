@@ -14,11 +14,6 @@ RUN apt-get update && \
 
 # Install Lato font
 RUN mkdir -p /usr/share/fonts/truetype/lato && \
-    wget -O /tmp/Lato.zip "https://fonts.google.com/download?family=Lato" && \
-    unzip /tmp/Lato.zip -d /usr/share/fonts/truetype/lato && \
-    fc-cache -f -v
-
-RUN mkdir -p /usr/share/fonts/truetype/lato && \
     curl -L -o /usr/share/fonts/truetype/lato/Lato-Bold.ttf "https://github.com/google/fonts/raw/main/ofl/lato/Lato-Bold.ttf" && \
     curl -L -o /usr/share/fonts/truetype/lato/Lato-BoldItalic.ttf "https://github.com/google/fonts/raw/main/ofl/lato/Lato-BoldItalic.ttf" && \
     curl -L -o /usr/share/fonts/truetype/lato/Lato-Italic.ttf "https://github.com/google/fonts/raw/main/ofl/lato/Lato-Italic.ttf" && \
