@@ -9,8 +9,8 @@ import time
 import extra_streamlit_components as stx
 import folium
 import streamlit as st
+from folium import Icon
 from pydantic.v1.utils import deep_update
-from streamlit_folium import folium_static
 from streamlit_js_eval import streamlit_js_eval
 
 from app import (
@@ -150,14 +150,29 @@ def build_content(plot_placeholder, message_box) -> None:
                     folium_map = folium.Map(
                         location=[input_processed["lat"], input_processed["lon"]],
                         zoom_start=4,
-                        height=500,
                     )
+
+                    # Create a marker with a custom icon
                     folium.Marker(
-                        [input_processed["lat"], input_processed["lon"]],
+                        location=[input_processed["lat"], input_processed["lon"]],
                         popup=input_processed["location_name"],
+                        icon=Icon(icon="cloud"),
                     ).add_to(folium_map)
-                    folium.TileLayer("CartoDB positron").add_to(folium_map)
-                    folium_static(folium_map)
+
+                    # Data from https://xyzservices.readthedocs.io/en/latest/introduction.html
+                    folium.TileLayer(
+                        tiles="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+                        attr="(C) OpenStreetMap contributors (C) CARTO",
+                        name="CartoDB.Positron",
+                        max_zoom=20,
+                        subdomains="abcd",
+                    ).add_to(folium_map)
+
+                    # Convert the map to an HTML string
+                    html_string = folium_map._repr_html_()
+
+                    # Display the map
+                    st.components.v1.html(html_string, width=500, height=500)
 
     if st.session_state["random_graph"]:
         st.write("Random graph from the list of graphs created before.")

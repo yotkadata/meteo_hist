@@ -26,8 +26,9 @@ div.css-j5r0tf {
   min-width: 285px;
 }
 
-/* Make Folium maps responsive */
+/* Make Folium map responsive */
 [title~="st.iframe"] {
+  min-height: 500px;
   width: 100%;
 }
 
