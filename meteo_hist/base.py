@@ -9,6 +9,7 @@ import string
 from calendar import isleap
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
+from urllib.parse import urlencode
 
 import numpy as np
 import pandas as pd
@@ -242,17 +243,6 @@ class MeteoHist:
         # Get metric data name
         metric_data = self.get_metric_info(metric)["data"]
 
-        # Define URL prefix and a query parameter if an API key was provided
-        domain_prefix = "customer-" if self.api_key else ""
-        api_key_param = f"&apikey={self.api_key}" if self.api_key else ""
-
-        url = (
-            f"https://{domain_prefix}archive-api.open-meteo.com/v1/archive?"
-            f"latitude={coords[0]}&longitude={coords[1]}&"
-            f"start_date={date_start}&end_date={date_end}&"
-            f"daily={metric_data}&timezone=auto{api_key_param}"
-        )
-
         # Set unit to be used
         unit = self.get_units(metric_name=metric, system=system)
         unit_names = {
@@ -262,11 +252,34 @@ class MeteoHist:
             "in": "inch",
         }
 
-        # Add unit to URL
+        # Define URL prefix and a query parameter if an API key was provided
+        domain_prefix = "customer-" if self.api_key else ""
+
+        # Define base URL
+        base_url = f"https://{domain_prefix}archive-api.open-meteo.com/v1/archive?"
+
+        # Define query parameters
+        params = {
+            "latitude": coords[0],
+            "longitude": coords[1],
+            "start_date": date_start,
+            "end_date": date_end,
+            "daily": metric_data,
+            "timezone": "auto",
+        }
+
+        # Add API key if it exists
+        if self.api_key:
+            params["apikey"] = self.api_key
+
+        # Add unit to parameters
         if "temperature" in metric:
-            url = url + f"&temperature_unit={unit_names[unit]}"
+            params["temperature_unit"] = unit_names[unit]
         if "precipitation" in metric:
-            url = url + f"&precipitation_unit={unit_names[unit]}"
+            params["precipitation_unit"] = unit_names[unit]
+
+        # Construct URL
+        url = base_url + urlencode(params)
 
         try:
             # Get data from API

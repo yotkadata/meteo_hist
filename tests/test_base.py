@@ -30,6 +30,22 @@ def fixture_meteohist_instance_default():
     return MeteoHist(coords, data=data)
 
 
+def test_get_data():
+    """
+    Test if data is fetched correctly on initialization.
+    """
+    coords = (52.5170365, 13.3888599)  # Berlin coordinates
+
+    class_instance = MeteoHist(coords)
+
+    assert isinstance(
+        class_instance.data_raw, pd.DataFrame
+    ), f"data_raw attribute should be a Pandas DataFrame, but is {type(class_instance.data_raw)}"
+    assert isinstance(
+        class_instance.data, pd.DataFrame
+    ), f"data attribute should be a Pandas DataFrame, but is {type(class_instance.data)}"
+
+
 def test_year_attr(meteohist_instance_default):
     """
     Test the if MeteoHist with default parameters correctly sets year attribute.
