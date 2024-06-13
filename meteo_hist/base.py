@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 import pandas as pd
 import requests
+from dotenv import load_dotenv
 from geopy.exc import GeocoderServiceError, GeocoderTimedOut
 from geopy.geocoders import Nominatim
 from pydantic.v1.utils import deep_update
@@ -59,6 +60,9 @@ class MeteoHist:
         data: pd.DataFrame, optional
             Dataframe with metric data, by default None.
         """
+        # Load environment variables from .env file
+        load_dotenv()
+        self._api_key = os.getenv("API_KEY")
         self.coords: Tuple[float, float] = (round(coords[0], 6), round(coords[1], 6))
         self.metric: str = metric
         self.settings: Optional[Dict[str, Any]] = None
@@ -72,6 +76,13 @@ class MeteoHist:
         )
         self.reference_period: Tuple[int, int] = reference_period
         self.ref_nans: int = 0
+
+    @property
+    def api_key(self):
+        """
+        Get the API key.
+        """
+        return self._api_key
 
     def update_settings(self, settings: Optional[Dict[str, Any]]) -> None:
         """
@@ -231,11 +242,15 @@ class MeteoHist:
         # Get metric data name
         metric_data = self.get_metric_info(metric)["data"]
 
+        # Define URL prefix and a query parameter if an API key was provided
+        domain_prefix = "customer-" if self.api_key else ""
+        api_key_param = f"&apikey={self.api_key}" if self.api_key else ""
+
         url = (
-            "https://archive-api.open-meteo.com/v1/archive?"
+            f"https://{domain_prefix}archive-api.open-meteo.com/v1/archive?"
             f"latitude={coords[0]}&longitude={coords[1]}&"
             f"start_date={date_start}&end_date={date_end}&"
-            f"daily={metric_data}&timezone=auto"
+            f"daily={metric_data}&timezone=auto{api_key_param}"
         )
 
         # Set unit to be used

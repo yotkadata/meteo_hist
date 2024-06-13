@@ -7,6 +7,7 @@ pandas==2.2.2
 plotly==5.22.0
 pydantic==2.7.3
 pytest==8.2.2
+python-dotenv==1.0.1
 Requests==2.32.3
 statsmodels==0.14.2
 streamlit==1.35.0

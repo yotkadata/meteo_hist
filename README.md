@@ -111,6 +111,14 @@ docker run -d --name meteo_hist -p 8501:8501 -v /home/user/path/output/:/app/out
 
 It is also possible to use the Python class directly, without the web app. See the `notebooks` directory for examples.
 
+### Using Open-Meteo API keys
+
+The Open-Meteo API doesn't require an API key, but limits the number of API calls without one. To use an API key provided by Open-Meteo, simply add the `API_KEY` variable to a file called `.env` in the base directory. Example (replace [my_api_key] with your key):
+
+```
+API_KEY=[my_api_key]
+```
+
 ### Thanks
 
 - This app was inspired by [plots](https://twitter.com/dr_xeo/status/1656933695511511043) made by [Dr. Dominic Royé](https://github.com/dominicroye) - thanks for the idea and the exchange about it.
