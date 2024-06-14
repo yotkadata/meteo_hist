@@ -197,6 +197,86 @@ class MeteoHist:
 
         return target_date
 
+    def build_query(
+        self,
+        coords: Tuple[float, float],
+        metric: str,
+        system: str,
+        years: Tuple[int, int],
+    ) -> str:
+        """
+        Build a query URL for the OpenMeteo API.
+
+        Parameters
+        ----------
+        coords: tuple of floats
+            Latitude and longitude of the location.
+        metric: str
+            Metric to plot. Allowed values: temperature_mean (default), temperature_min,
+            temperature_max, precipitation_rolling, precipitation_cum.
+        system: str
+            System to get units for. Possible values: metric, imperial.
+        years: tuple of ints
+            First and last year to get data for.
+
+        Returns
+        -------
+        str
+            URL for the query.
+        """
+
+        # Define URL prefix and a query parameter if an API key was provided
+        domain_prefix = "customer-" if self.api_key else ""
+
+        # Define base URL
+        base_url = f"https://{domain_prefix}archive-api.open-meteo.com/v1/archive?"
+
+        # Define start and end date
+        date_start = f"{years[0]}-01-01"
+        date_end = (
+            f"{years[1]}-12-31"
+            # If the end date is in the future, set it to today
+            if years[1] != dt.datetime.now().year
+            else dt.datetime.now().strftime("%Y-%m-%d")
+        )
+
+        # Get metric data name
+        metric_data = self.get_metric_info(metric)["data"]
+
+        # Set unit to be used
+        unit = self.get_units(metric_name=metric, system=system)
+        unit_names = {
+            "°C": "celsius",
+            "°F": "fahrenheit",
+            "mm": "mm",
+            "in": "inch",
+        }
+
+        # Define query parameters
+        params = {
+            "latitude": coords[0],
+            "longitude": coords[1],
+            "start_date": date_start,
+            "end_date": date_end,
+            "daily": metric_data,
+            "timezone": "auto",
+        }
+
+        # Add API key if it exists
+        if self.api_key:
+            params["apikey"] = self.api_key
+
+        # Add unit to parameters
+        if "temperature" in metric:
+            params["temperature_unit"] = unit_names[unit]
+        if "precipitation" in metric:
+            params["precipitation_unit"] = unit_names[unit]
+
+        # Construct URL
+        url = base_url + urlencode(params)
+
+        return url
+
     def get_data(
         self,
         coords: Optional[Tuple[float, float]] = None,
@@ -231,55 +311,11 @@ class MeteoHist:
         system = self.settings["system"] if system is None else system
         years = (1940, dt.datetime.now().year) if years is None else years
 
-        # Define start and end date
-        date_start = f"{years[0]}-01-01"
-        date_end = (
-            f"{years[1]}-12-31"
-            # If the end date is in the future, set it to today
-            if years[1] != dt.datetime.now().year
-            else dt.datetime.now().strftime("%Y-%m-%d")
-        )
-
         # Get metric data name
         metric_data = self.get_metric_info(metric)["data"]
 
-        # Set unit to be used
-        unit = self.get_units(metric_name=metric, system=system)
-        unit_names = {
-            "°C": "celsius",
-            "°F": "fahrenheit",
-            "mm": "mm",
-            "in": "inch",
-        }
-
-        # Define URL prefix and a query parameter if an API key was provided
-        domain_prefix = "customer-" if self.api_key else ""
-
-        # Define base URL
-        base_url = f"https://{domain_prefix}archive-api.open-meteo.com/v1/archive?"
-
-        # Define query parameters
-        params = {
-            "latitude": coords[0],
-            "longitude": coords[1],
-            "start_date": date_start,
-            "end_date": date_end,
-            "daily": metric_data,
-            "timezone": "auto",
-        }
-
-        # Add API key if it exists
-        if self.api_key:
-            params["apikey"] = self.api_key
-
-        # Add unit to parameters
-        if "temperature" in metric:
-            params["temperature_unit"] = unit_names[unit]
-        if "precipitation" in metric:
-            params["precipitation_unit"] = unit_names[unit]
-
-        # Construct URL
-        url = base_url + urlencode(params)
+        # Build query URL
+        url = self.build_query(coords, metric, system, years)
 
         try:
             # Get data from API
