@@ -21,7 +21,8 @@ def fixture_meteohist_instance_default():
 
     # Construct the path to the sample data file relative to this test file
     sample_data_path = (
-        Path(__file__).parent.parent / "sample_data/temperature_mean-berlin-germany.csv"
+        Path(__file__).parent.parent
+        / "sample_data/raw/temperature_mean-berlin-germany.csv"
     )
 
     # Use sample data to prevent network requests and API rate limits
