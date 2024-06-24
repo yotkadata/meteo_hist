@@ -63,7 +63,7 @@ class MeteoHist:
         """
         # Load environment variables from .env file
         load_dotenv()
-        self._api_key = os.getenv("API_KEY")
+        self._api_key = os.getenv("OPEN_METEO_API_KEY")
         self.coords: Tuple[float, float] = (round(coords[0], 6), round(coords[1], 6))
         self.metric: str = metric
         self.settings: Optional[Dict[str, Any]] = None

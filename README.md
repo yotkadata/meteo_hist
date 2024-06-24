@@ -113,10 +113,10 @@ It is also possible to use the Python class directly, without the web app. See t
 
 ### Using Open-Meteo API keys
 
-The Open-Meteo API doesn't require an API key, but limits the number of API calls without one. To use an API key provided by Open-Meteo, simply add the `API_KEY` variable to a file called `.env` in the base directory. Example (replace [my_api_key] with your key):
+The Open-Meteo API doesn't require an API key, but limits the number of API calls without one. To use an API key provided by Open-Meteo, simply add the `OPEN_METEO_API_KEY` variable to a file called `.env` in the base directory. Example (replace [my_api_key] with your key):
 
 ```
-API_KEY=[my_api_key]
+OPEN_METEO_API_KEY=[my_api_key]
 ```
 
 ### Thanks
