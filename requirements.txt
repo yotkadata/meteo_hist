@@ -2,10 +2,11 @@ extra_streamlit_components==0.1.71
 folium==0.16.0
 geopy==2.4.1
 kaleido==0.2.1
-numpy==1.26.4
+nbformat==5.10.4
+numpy==2.1.1
 pandas==2.2.2
 plotly==5.22.0
-pydantic==2.7.3
+pydantic==2.9.1
 pytest==8.2.2
 python-dotenv==1.0.1
 Requests==2.32.3
