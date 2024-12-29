@@ -115,6 +115,8 @@ def adjust_layout(fig: go.Figure, width: int, height: int) -> go.Figure:
         "height": height,
         "font_size": font_size,
         "title_font_size": font_size_title,
+        "font": {"family": "Lato, Arial, sans-serif"},
+        "title": {"font": {"family": "Lato, Arial, sans-serif"}},
         "margin": {
             "b": margin_b,
             "l": margin_l,
@@ -130,6 +132,7 @@ def adjust_layout(fig: go.Figure, width: int, height: int) -> go.Figure:
         fig.update_annotations(
             selector={"name": annotation_name},
             font_size=font_size_datainfo,
+            font={"family": "Lato, Arial, sans-serif"},
         )
 
     return fig

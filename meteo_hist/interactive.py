@@ -687,7 +687,7 @@ class MeteoHistInteractive(MeteoHist):
                     f"{self.year}</b><br /><sup>{self.settings['metric']['subtitle']} "
                     f"({self.reference_period[0]}-{self.reference_period[1]})</sup>"
                 ),
-                "font": {"family": "Lato", "size": 32, "color": "#1f1f1f"},
+                "font": {"family": "Lato, Arial, sans-serif", "size": 32, "color": "#1f1f1f"},
                 "x": 0.98,
                 "y": 0.93,
                 "xanchor": "right",
@@ -701,7 +701,7 @@ class MeteoHistInteractive(MeteoHist):
             bargap=0,
             width=1000,
             height=600,
-            font={"family": "Lato", "size": 14, "color": "#1f1f1f"},
+            font={"family": "Lato, Arial, sans-serif", "size": 14, "color": "#1f1f1f"},
             xaxis={
                 "dtick": "M1",  # Tick every month
                 "hoverformat": "%e %B",
