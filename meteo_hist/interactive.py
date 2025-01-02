@@ -792,4 +792,7 @@ class MeteoHistInteractive(MeteoHist):
             scale=2,
         )
 
+        # Clean up the output directory
+        super().clean_output_dir()
+
         return file_path
