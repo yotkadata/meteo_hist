@@ -10,6 +10,7 @@ from calendar import isleap
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 from urllib.parse import urlencode
+import json
 
 import numpy as np
 import pandas as pd
@@ -27,6 +28,12 @@ from meteo_hist import APICallFailed, OpenMeteoAPIException
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Add a dedicated user tracking logger
+tracker = logging.getLogger("user_tracker")
+tracker.setLevel(logging.INFO)
+# Handler will be created during first use to ensure directory exists
+tracker_handler = None
 
 
 class MeteoHist:
@@ -77,6 +84,9 @@ class MeteoHist:
         )
         self.reference_period: Tuple[int, int] = reference_period
         self.ref_nans: int = 0
+        
+        # Track the query
+        self.track_query()
 
     @property
     def api_key(self):
@@ -945,6 +955,56 @@ class MeteoHist:
                 os.remove(file)
 
             print(f"Removed {len(png_files) - num_files_to_keep} old files.")
+
+    def track_query(self) -> None:
+        """
+        Track user query with location and metric details.
+        Data is saved to a log file for analytics.
+        """
+        try:
+            # Get log directory from environment variable with fallback
+            log_base = os.getenv('LOG_DIR', 'logs')
+            
+            # If absolute path in Docker, use it; otherwise create subdirectory
+            if log_base.startswith('/'):
+                log_dir = Path(log_base)
+            else:
+                log_dir = Path().absolute() / log_base
+                
+            # Ensure log directory exists
+            log_dir.mkdir(parents=True, exist_ok=True)
+            
+            log_file = log_dir / 'user_queries.log'
+            
+            # Configure logger if not already set up
+            global tracker_handler
+            if not tracker.handlers:
+                tracker_handler = logging.FileHandler(log_file)
+                tracker.addHandler(tracker_handler)
+                
+            # Prepare query data
+            query_data = {
+                "timestamp": dt.datetime.now().isoformat(),
+                "location": self.settings["location_name"],
+                "coords": self.coords,
+                "metric": self.metric,
+                "year": self.year,
+                "reference_period": self.reference_period,
+                "settings": {
+                    "highlight_max": self.settings["highlight_max"],
+                    "highlight_min":  self.settings["highlight_min"],
+                    "peak_alpha": self.settings["peak_alpha"],
+                    "peak_method": self.settings["peak_method"],
+                    "peak_distance": self.settings["peak_distance"],
+                    "smooth": self.settings["smooth"],
+                    "system": self.settings["system"],
+                }
+            }
+            
+            # Log as JSON for easier parsing later
+            tracker.info(json.dumps(query_data))
+        except Exception as e:
+            logger.warning(f"Failed to track query: {e}")
 
     @staticmethod
     def show_random(file_dir: str = None) -> str:

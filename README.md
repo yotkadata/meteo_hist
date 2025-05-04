@@ -107,6 +107,74 @@ To save the generated files outside the Docker container, you can add a binding 
 docker run -d --name meteo_hist -p 8501:8501 -v /home/user/path/output/:/app/output meteo_hist:latest
 ```
 
+### User Query Tracking
+
+The app includes an anonymous query tracking feature that logs information about how the app is used. This helps improve the application by understanding which locations, metrics, and settings are most valuable to users.
+
+#### What is tracked:
+
+- Timestamp of the query
+- Location coordinates and resolved location name
+- Selected metric (temperature/precipitation type)
+- Year and reference period being viewed
+- Selected visualization settings
+
+No personal data or identifying information is collected.
+
+#### Log file location:
+
+- When running locally: Logs are stored in a `logs` directory in the project root
+- In Docker: Logs are stored in `/app/logs` inside the container
+
+#### Accessing logs from Docker:
+
+Mount a volume to access logs from your Docker container:
+
+```bash
+docker run -d --name meteo_hist -p 8501:8501 \
+  -v /home/user/path/output/:/app/output \
+  -v /home/user/path/logs/:/app/logs \
+  meteo_hist:latest
+```
+
+#### Log format:
+
+Logs are stored as JSON entries in a `user_queries.log` file for easy parsing and analysis:
+
+```json
+{
+  "timestamp": "2025-05-04T20:25:23.808898",
+  "location": "Caracas, Venezuela",
+  "coords": [10.506093, -66.914601],
+  "metric": "precipitation_cum",
+  "year": 2025,
+  "reference_period": [1961, 1990],
+  "settings": {
+    "highlight_max": 3,
+    "highlight_min": 2,
+    "peak_alpha": false,
+    "peak_method": "percentile",
+    "peak_distance": 10,
+    "smooth": { "apply": false, "frac": 0.083 },
+    "system": "imperial"
+  }
+}
+```
+
+#### Configuration:
+
+You can customize the log directory by setting the `LOG_DIR` environment variable:
+
+```bash
+LOG_DIR=/custom/path streamlit run app.py
+```
+
+Or in Docker:
+
+```bash
+docker run -d --name meteo_hist -p 8501:8501 -e LOG_DIR=/custom/logs meteo_hist:latest
+```
+
 ### Using the class without the web interface
 
 It is also possible to use the Python class directly, without the web app. See the `notebooks` directory for examples.

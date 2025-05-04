@@ -32,6 +32,9 @@ COPY ./app/ app/
 COPY ./meteo_hist/ meteo_hist/
 COPY ./examples/ examples/
 
+# Create log directory
+RUN mkdir -p /app/logs && chmod 777 /app/logs
+
 EXPOSE 8501
 
 HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health
